@@ -61,7 +61,7 @@ class Player(BasePlayer):
     )
     quiz_cost = models.StringField(
         choices=[
-            ('higher', 'A higher number costs more (cost grows with the square of the number).'),
+            ('higher', 'A higher number costs more.'),
             ('lower', 'A lower number costs more.'),
             ('same', 'All numbers have the same cost.'),
         ],
