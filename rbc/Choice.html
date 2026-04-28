@@ -1,0 +1,126 @@
+{{ block title }}Round {{ round_number }} of {{ num_rounds }} — Your Choice{{ endblock }}
+
+{{ block content }}
+<style>
+  .rbc-choice-value {
+    font-size: 72px;
+    font-weight: 800;
+    text-align: center;
+    color: #1a1a2e;
+    margin: 16px 0;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .rbc-choice-label {
+    text-align: center;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+  }
+  .rbc-slider-container { padding: 0 4px; margin-top: 8px; }
+  input[type="range"].rbc-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #4361ee, #e63946);
+    outline: none;
+    margin: 12px 0;
+  }
+  input[type="range"].rbc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #4361ee;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  input[type="range"].rbc-slider::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #4361ee;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .rbc-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #888;
+  }
+  .rbc-cost-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 15px;
+  }
+  .rbc-cost-row:last-child { border-bottom: none; }
+  .rbc-penalty-row { color: #e63946; }
+</style>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="rbc-choice-label">Your Choice</div>
+    <div class="rbc-choice-value" id="rbc-choice-display">50</div>
+    <div class="rbc-slider-container">
+      <input
+        type="range"
+        class="rbc-slider"
+        id="rbc-choice-slider"
+        name="x_choice"
+        min="0" max="100" value="50" step="1" required>
+      <div class="rbc-slider-labels">
+        <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="rbc-cost-row">
+      <span>Endowment</span>
+      <span>+{{ E }}.00</span>
+    </div>
+    <div class="rbc-cost-row">
+      <span>Cost (x² ÷ {{ K }})</span>
+      <span id="rbc-live-cost">−12.50</span>
+    </div>
+    <div class="rbc-cost-row rbc-penalty-row">
+      <span>Penalty (if below median)</span>
+      <span>−{{ L }}.00</span>
+    </div>
+  </div>
+</div>
+
+<p class="small text-muted text-center mb-3">
+  Reminder: penalty applies <em>only</em> if your number is strictly below the group median.
+</p>
+
+{{ next_button }}
+
+<script>
+  (function() {
+    var slider = document.getElementById('rbc-choice-slider');
+    var display = document.getElementById('rbc-choice-display');
+    var liveCost = document.getElementById('rbc-live-cost');
+    var K = {{ K }};
+    function update() {
+      var x = parseInt(slider.value, 10);
+      display.textContent = x;
+      var cost = (x * x) / K;
+      liveCost.textContent = '−' + cost.toFixed(2);
+    }
+    slider.addEventListener('input', update);
+    update();
+  })();
+</script>
+{{ endblock }}

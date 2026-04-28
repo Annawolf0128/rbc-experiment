@@ -1,0 +1,18 @@
+{{ block title }}Experiment Complete{{ endblock }}
+
+{{ block content }}
+<div class="card mb-3">
+  <div class="card-body">
+    <h4 class="mb-3">Your payment</h4>
+    <p>Your randomly selected payment round was <strong>round {{ paid_round }}</strong>.</p>
+    <table class="table table-sm">
+      <tbody>
+        <tr><td>Round {{ paid_round }} earnings</td><td class="text-end">{{ paid_amount }}</td></tr>
+        <tr><td>Show-up fee</td><td class="text-end">{{ participation_fee }}</td></tr>
+        <tr class="fw-bold table-success"><td>Total</td><td class="text-end">{{ total }}</td></tr>
+      </tbody>
+    </table>
+    <p class="mt-4">Thank you for participating!</p>
+  </div>
+</div>
+{{ endblock }}

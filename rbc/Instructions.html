@@ -1,0 +1,28 @@
+{{ block title }}Instructions{{ endblock }}
+
+{{ block content }}
+<div class="card mb-3">
+  <div class="card-body">
+    <h4>The Game</h4>
+    <p>You are part of a group of <strong>{{ n }}</strong> participants. The game lasts <strong>{{ num_rounds }}</strong> rounds, and the rules are the same in every round.</p>
+    <p>Each round, every participant chooses an integer between <strong>0 and 100</strong>.</p>
+
+    <h5 class="mt-4">Your earnings each round</h5>
+    <p>Your earnings = <strong>{{ E }} − Cost − Penalty (if any)</strong>, where:</p>
+    <ul>
+      <li><strong>Cost</strong> = (your number)² ÷ {{ K }}. Higher numbers cost more (the cost grows with the square of your number).</li>
+      <li><strong>Penalty</strong> of <strong>{{ L }}</strong> applies <em>only</em> if your number is <strong>strictly below</strong> the group median that round.</li>
+    </ul>
+
+    <h5 class="mt-4">The group median</h5>
+    <p>After everyone submits their numbers, the <strong>group median</strong> (the middle value among the {{ n }} numbers chosen) is computed and shown to you.</p>
+    <p>If your number <strong>equals</strong> the median or is <strong>above</strong> it, you pay <strong>no</strong> penalty.</p>
+    <p>If your number is <strong>strictly below</strong> the median, you pay the penalty of {{ L }}.</p>
+
+    <h5 class="mt-4">Payment</h5>
+    <p>At the end of the experiment, <strong>one round</strong> will be selected at random and you will receive your earnings from that round, plus a fixed show-up fee.</p>
+  </div>
+</div>
+
+{{ next_button }}
+{{ endblock }}

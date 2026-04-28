@@ -1,0 +1,36 @@
+{{ block title }}Round {{ round_number }} Result{{ endblock }}
+
+{{ block content }}
+<div class="card mb-3">
+  <div class="card-body text-center">
+    <p class="text-muted small mb-1">Your number</p>
+    <h2 class="mb-3">{{ x }}</h2>
+    <hr>
+    <p class="text-muted small mb-1">Group median</p>
+    <h3 class="mb-0">{{ median }}</h3>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <table class="table table-sm mb-0">
+      <tbody>
+        <tr><td>Endowment</td><td class="text-end">+{{ E }}</td></tr>
+        <tr><td>Cost ({{ x }}² ÷ {{ K }})</td><td class="text-end">−{{ cost }}</td></tr>
+        {{ if below_median }}
+        <tr class="text-danger"><td>Penalty (below median)</td><td class="text-end">−{{ penalty }}</td></tr>
+        {{ else }}
+        <tr class="text-success"><td>No penalty (≥ median)</td><td class="text-end">−0</td></tr>
+        {{ endif }}
+        <tr class="fw-bold"><td>Round earnings</td><td class="text-end">{{ round_payoff }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{{ if not is_last_round }}
+<p class="text-center text-muted small">Click below to begin the next round.</p>
+{{ endif }}
+
+{{ next_button }}
+{{ endblock }}
