@@ -37,6 +37,11 @@ class Group(BaseGroup):
 
 
 class Player(BasePlayer):
+    consent_given = models.BooleanField(
+        label="I agree to participate.",
+        blank=True,  # validated in Consent.error_message instead, so we get a friendlier message
+    )
+
     x_choice = models.IntegerField(
         min=0, max=100,
         label='Choose a number between 0 and 100',
@@ -163,9 +168,17 @@ def set_payoffs(group: Group):
 # ============ Pages ============
 
 class Consent(Page):
+    form_model = 'player'
+    form_fields = ['consent_given']
+
     @staticmethod
     def is_displayed(player: Player):
         return player.round_number == 1
+
+    @staticmethod
+    def error_message(player: Player, values):
+        if not values.get('consent_given'):
+            return "You must check the box to consent to participate."
 
 
 class Instructions(Page):
