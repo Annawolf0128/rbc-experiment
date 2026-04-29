@@ -1,22 +1,25 @@
 from otree.api import *
 import random
 
+# All tunable parameters live in params.py — edit there, not here.
+from params import ENDOWMENT, COST_DIVISOR, NUM_ROUNDS, PENALTY_LOW
+
 
 doc = """
 Reversed Beauty Contest. Each round players choose a number x in [0, 100]; cost is
 x^2/k; a fixed penalty L is paid by anyone whose x is strictly below the group median.
-2x2 treatment design (group size {5, 15} x penalty {15, 40}) selected via session
-config. Comprehension quiz at start; SOEP risk Likert in exit survey; payment is the
-show-up fee plus the earnings of one randomly selected round.
+2x2 treatment design (group size x penalty) selected via session config. Comprehension
+quiz at start; SOEP risk Likert in exit survey; payment is the show-up fee plus the
+earnings of one randomly selected round.
 """
 
 
 class C(BaseConstants):
     NAME_IN_URL = 'rbc'
     PLAYERS_PER_GROUP = None  # all participants in one group; size = num_participants
-    NUM_ROUNDS = 12
-    ENDOWMENT = 100
-    K = 200
+    NUM_ROUNDS = NUM_ROUNDS
+    ENDOWMENT = ENDOWMENT
+    K = COST_DIVISOR
 
 
 class Subsession(BaseSubsession):
@@ -142,7 +145,7 @@ class Player(BasePlayer):
 
 
 def set_payoffs(group: Group):
-    L = group.session.config.get('penalty', 15)
+    L = group.session.config.get('penalty', PENALTY_LOW)
     players = group.get_players()
     sorted_choices = sorted([p.x_choice for p in players])
     n = len(sorted_choices)
@@ -173,7 +176,7 @@ class Instructions(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            L=player.session.config.get('penalty', 15),
+            L=player.session.config.get('penalty', PENALTY_LOW),
             E=C.ENDOWMENT,
             K=C.K,
             n=player.session.num_participants,
@@ -203,7 +206,7 @@ class Quiz(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            L=player.session.config.get('penalty', 15),
+            L=player.session.config.get('penalty', PENALTY_LOW),
             E=C.ENDOWMENT,
             K=C.K,
         )
@@ -216,7 +219,7 @@ class Choice(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            L=player.session.config.get('penalty', 15),
+            L=player.session.config.get('penalty', PENALTY_LOW),
             E=C.ENDOWMENT,
             K=C.K,
             round_number=player.round_number,
@@ -243,7 +246,7 @@ class Results(Page):
             round_payoff=round(player.round_payoff, 2),
             E=C.ENDOWMENT,
             K=C.K,
-            L=player.session.config.get('penalty', 15),
+            L=player.session.config.get('penalty', PENALTY_LOW),
             round_number=player.round_number,
             num_rounds=C.NUM_ROUNDS,
             is_last_round=player.round_number == C.NUM_ROUNDS,
@@ -279,7 +282,7 @@ class Payment(Page):
         paid_player = player.in_round(paid_round)
         paid_amount = paid_player.round_payoff
         player.payoff = paid_amount
-        fee = player.session.config.get('participation_fee', 5)
+        fee = player.session.config.get('participation_fee', 0)
         return dict(
             paid_round=paid_round,
             paid_amount=round(paid_amount, 2),

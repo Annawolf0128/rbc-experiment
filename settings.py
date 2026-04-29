@@ -1,46 +1,56 @@
 from os import environ
 
+# All tunable parameters live in params.py — edit there, not here.
+from params import (
+    PENALTY_LOW,
+    PENALTY_HIGH,
+    GROUP_SIZE_SMALL,
+    GROUP_SIZE_LARGE,
+    SHOW_UP_FEE,
+    CURRENCY_PER_POINT,
+)
+
 SESSION_CONFIGS = [
     dict(
         name='rbc_preview',
         display_name='RBC: solo design preview (n=1, walk through every page)',
         app_sequence=['rbc'],
         num_demo_participants=1,
-        penalty=20,
+        penalty=PENALTY_LOW,
     ),
     dict(
         name='rbc_small_low',
-        display_name='RBC: small group (n=5), low penalty (L=20)',
+        display_name=f'RBC: small group (n={GROUP_SIZE_SMALL}), low penalty (L={PENALTY_LOW})',
         app_sequence=['rbc'],
-        num_demo_participants=5,
-        penalty=20,
+        num_demo_participants=GROUP_SIZE_SMALL,
+        penalty=PENALTY_LOW,
     ),
     dict(
         name='rbc_small_high',
-        display_name='RBC: small group (n=5), high penalty (L=40)',
+        display_name=f'RBC: small group (n={GROUP_SIZE_SMALL}), high penalty (L={PENALTY_HIGH})',
         app_sequence=['rbc'],
-        num_demo_participants=5,
-        penalty=40,
+        num_demo_participants=GROUP_SIZE_SMALL,
+        penalty=PENALTY_HIGH,
     ),
     dict(
         name='rbc_large_low',
-        display_name='RBC: large group (n=15), low penalty (L=20)',
+        display_name=f'RBC: large group (n={GROUP_SIZE_LARGE}), low penalty (L={PENALTY_LOW})',
         app_sequence=['rbc'],
-        num_demo_participants=15,
-        penalty=20,
+        num_demo_participants=GROUP_SIZE_LARGE,
+        penalty=PENALTY_LOW,
     ),
     dict(
         name='rbc_large_high',
-        display_name='RBC: large group (n=15), high penalty (L=40)',
+        display_name=f'RBC: large group (n={GROUP_SIZE_LARGE}), high penalty (L={PENALTY_HIGH})',
         app_sequence=['rbc'],
-        num_demo_participants=15,
-        penalty=40,
+        num_demo_participants=GROUP_SIZE_LARGE,
+        penalty=PENALTY_HIGH,
     ),
 ]
 
 SESSION_CONFIG_DEFAULTS = dict(
-    real_world_currency_per_point=1.00,
-    participation_fee=5.00,
+    real_world_currency_per_point=CURRENCY_PER_POINT,
+    participation_fee=SHOW_UP_FEE,
     doc='',
 )
 
