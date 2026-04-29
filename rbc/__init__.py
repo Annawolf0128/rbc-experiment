@@ -118,7 +118,7 @@ class Player(BasePlayer):
             ('nonbinary', 'Non-binary'),
             ('prefer_not', 'Prefer not to say'),
         ],
-        label="Q5. Gender",
+        label="Q7. Gender",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -128,7 +128,7 @@ class Player(BasePlayer):
             ('no', 'No'),
             ('unsure', 'Unsure'),
         ],
-        label="Q6. Have you participated in a Beauty Contest experiment before?",
+        label="Q5. Have you participated in a Beauty Contest experiment before?",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -138,7 +138,7 @@ class Player(BasePlayer):
             ('self_study', 'Self-study'),
             ('no', 'No'),
         ],
-        label="Q7. Have you studied game theory or experimental economics?",
+        label="Q6. Have you studied game theory or experimental economics?",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -273,9 +273,9 @@ class Survey(Page):
         'survey_strategy',
         'survey_use_median',
         'survey_best',
-        'survey_gender',
         'survey_prior_bc',
         'survey_game_theory',
+        'survey_gender',
         'survey_age',
     ]
 
