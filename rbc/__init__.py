@@ -125,7 +125,7 @@ class Player(BasePlayer):
         min=0, max=10,
         label=(
             "Q1. How would you rate your willingness to take risks in general? "
-            "(0 = completely unwilling, 10 = fully prepared to take risks)"
+            "(0 = not at all willing, 10 = very willing)"
         ),
         widget=widgets.RadioSelectHorizontal,
         blank=True,
@@ -141,17 +141,7 @@ class Player(BasePlayer):
             ('no_fixed', 'No fixed strategy'),
             ('ignored', "No, I ignored it"),
         ],
-        label="Q3. Did you use the previous round's median as a reference?",
-        widget=widgets.RadioSelect,
-        blank=True,
-    )
-    survey_use_prior_medians = models.StringField(
-        choices=[
-            ('yes', 'Yes'),
-            ('sometimes', 'Sometimes'),
-            ('no', 'No'),
-        ],
-        label="Did you use the medians from the previous two or more rounds to help make your decisions?",
+        label="Q3. Did you use the previous round's median to help you make your decisions?",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -162,7 +152,28 @@ class Player(BasePlayer):
             ('not_much', 'Not very important'),
             ('not_at_all', 'Not important at all'),
         ],
-        label="How important was the median in your decision-making?",
+        label="Q4. How important was the previous round's median in your decision-making?",
+        widget=widgets.RadioSelect,
+        blank=True,
+    )
+    survey_use_prior_medians = models.StringField(
+        choices=[
+            ('yes', 'Yes'),
+            ('sometimes', 'Sometimes'),
+            ('no', 'No'),
+        ],
+        label="Q5. Did you use the medians from the previous two or more rounds to help make your decisions?",
+        widget=widgets.RadioSelect,
+        blank=True,
+    )
+    survey_prior_medians_importance = models.StringField(
+        choices=[
+            ('very', 'Very important'),
+            ('somewhat', 'Somewhat important'),
+            ('not_much', 'Not very important'),
+            ('not_at_all', 'Not important at all'),
+        ],
+        label="Q6. How important were the medians from the previous two or more rounds in your decision-making?",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -173,7 +184,7 @@ class Player(BasePlayer):
             ('high', 'High values'),
             ('other', 'Others'),
         ],
-        label="Q4. What do you think was the best outcome for the group?",
+        label="Q7. What do you think was the best outcome for the group?",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -188,7 +199,7 @@ class Player(BasePlayer):
             ('nonbinary', 'Non-binary'),
             ('prefer_not', 'Prefer not to say'),
         ],
-        label="Q7. Gender",
+        label="Q10. Gender",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -198,7 +209,7 @@ class Player(BasePlayer):
             ('no', 'No'),
             ('unsure', 'Unsure'),
         ],
-        label="Q5. Have you participated in a Beauty Contest experiment before?",
+        label="Q8. Have you participated in a Beauty Contest experiment before?",
         widget=widgets.RadioSelect,
         blank=True,
     )
@@ -208,13 +219,13 @@ class Player(BasePlayer):
             ('self_study', 'Self-study'),
             ('no', 'No'),
         ],
-        label="Q6. Have you studied game theory or experimental economics?",
+        label="Q9. Have you studied game theory or experimental economics?",
         widget=widgets.RadioSelect,
         blank=True,
     )
     survey_age = models.StringField(
         choices=[(str(a), str(a)) for a in range(17, 30)] + [('30+', '30 or above')],
-        label="Q8. Age",
+        label="Q11. Age",
         blank=True,
     )
 
@@ -404,9 +415,11 @@ class Survey(Page):
     form_model = 'player'
     form_fields = [
         'survey_risk',
+        'survey_strategy',
         'survey_use_median',
-        'survey_use_prior_medians',
         'survey_median_importance',
+        'survey_use_prior_medians',
+        'survey_prior_medians_importance',
         'survey_best',
         'survey_best_other',
         'survey_prior_bc',

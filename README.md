@@ -40,7 +40,7 @@ Shared parameters: endowment `E = 100`, cost denominator `k = 200`, `T = 20` rou
 ```
 Welcome → Consent → Instructions → Quiz (comprehension check)
        → 20 × ([Belief, if enabled] → Choice → WaitForGroup → Results)
-       → Survey (SOEP risk Likert + 7 strategy / demographics items)
+       → Survey (risk, strategy, median-use, and demographics items)
        → Payment (show-up fee + one randomly selected round's earnings)
 ```
 
