@@ -23,7 +23,7 @@ Open http://localhost:8000/demo/ in a browser. For multi-player testing, open ad
 
 | Config | n | L | Rounds | x̄ = √(Lk) | Purpose |
 |---|---|---|---|---|---|
-| `rbc_preview` | 1 | 20 | 20 | 63.2 | Solo preview, no belief elicitation |
+| `rbc_preview` | 1 | 20 | 2 | 63.2 | Solo quick test, no belief elicitation |
 | `rbc_test_2p_2r` | 2 | 20 | 2 | 63.2 | 2-player quick test |
 | `rbc_test_2p_2r_belief` | 2 | 20 | 2 | 63.2 | 2-player quick test with belief elicitation |
 | `rbc_small_low` | 5 | 20 | 20 | 63.2 | Small group, low penalty |

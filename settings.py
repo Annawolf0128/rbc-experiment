@@ -13,11 +13,12 @@ from params import (
 SESSION_CONFIGS = [
     dict(
         name='rbc_preview',
-        display_name='TEST: 1 player, 20 rounds, no belief',
+        display_name='TEST: 1 player, 2 rounds, no belief',
         app_sequence=['rbc'],
         num_demo_participants=1,
         penalty=PENALTY_LOW,
-        show_consent=True,
+        num_rounds=2,
+        show_consent=False,
         show_welcome=True,
     ),
     dict(
