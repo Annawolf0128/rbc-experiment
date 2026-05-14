@@ -180,11 +180,11 @@ class Player(BasePlayer):
     survey_best = models.StringField(
         choices=[
             ('all_zero', 'Everyone chooses 0'),
-            ('middle', 'Middle values (~50)'),
-            ('high', 'High values'),
+            ('all_high', 'Everyone chooses a high value'),
+            ('mixed_low_high', 'Some choose low values, some choose high values'),
             ('other', 'Others'),
         ],
-        label="Q7. What do you think was the best outcome for the group?",
+        label="Q7. What do you think was the best outcome for the group in each round?",
         widget=widgets.RadioSelect,
         blank=True,
     )
