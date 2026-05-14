@@ -131,7 +131,7 @@ class Player(BasePlayer):
         blank=True,
     )
     survey_strategy = models.LongStringField(
-        label="Q2. What was your main reasoning when choosing a number each round?",
+        label="Q2. How did you decide which number to choose each round?",
         blank=True,
     )
     survey_use_median = models.StringField(
