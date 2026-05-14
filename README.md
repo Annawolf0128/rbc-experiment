@@ -21,17 +21,17 @@ Open http://localhost:8000/demo/ in a browser. For multi-player testing, open ad
 
 ## Treatment configurations
 
-| Config | n | L | x̄ = √(Lk) | Purpose |
-|---|---|---|---|---|
-| `rbc_preview` | 1 | 20 | 63.2 | 20-round solo preview, no belief elicitation |
-| `rbc_test_2p_2r` | 2 | 20 | 63.2 | 2-player, 2-round quick test |
-| `rbc_test_2p_2r_belief` | 2 | 20 | 63.2 | 2-player, 2-round quick test with belief elicitation |
-| `rbc_small_low` | 5 | 20 | 63.2 | Small group, low penalty |
-| `rbc_small_high` | 5 | 40 | 89.4 | Small group, high penalty |
-| `rbc_large_low` | 15 | 20 | 63.2 | Large group, low penalty |
-| `rbc_large_high` | 15 | 40 | 89.4 | Large group, high penalty |
-| `rbc_small_low_belief` | 5 | 20 | 63.2 | Small group, low penalty, with belief elicitation |
-| `rbc_large_low_belief` | 15 | 20 | 63.2 | Large group, low penalty, with belief elicitation |
+| Config | n | L | Rounds | x̄ = √(Lk) | Purpose |
+|---|---|---|---|---|---|
+| `rbc_preview` | 1 | 20 | 20 | 63.2 | Solo preview, no belief elicitation |
+| `rbc_test_2p_2r` | 2 | 20 | 2 | 63.2 | 2-player quick test |
+| `rbc_test_2p_2r_belief` | 2 | 20 | 2 | 63.2 | 2-player quick test with belief elicitation |
+| `rbc_small_low` | 5 | 20 | 20 | 63.2 | Small group, low penalty |
+| `rbc_small_high` | 5 | 40 | 20 | 89.4 | Small group, high penalty |
+| `rbc_large_low` | 15 | 20 | 20 | 63.2 | Large group, low penalty |
+| `rbc_large_high` | 15 | 40 | 20 | 89.4 | Large group, high penalty |
+| `rbc_small_low_belief` | 5 | 20 | 20 | 63.2 | Small group, low penalty, with belief elicitation |
+| `rbc_large_low_belief` | 15 | 20 | 20 | 63.2 | Large group, low penalty, with belief elicitation |
 
 Shared parameters: endowment `E = 100`, cost denominator `k = 200`, `T = 20` rounds by default.
 
