@@ -18,9 +18,9 @@
         <tr><td>Endowment</td><td class="text-end">+{{ E }}</td></tr>
         <tr><td>Cost ({{ x }}² ÷ {{ K }})</td><td class="text-end">−{{ cost }}</td></tr>
         {{ if below_median }}
-        <tr class="text-danger"><td>Penalty (below median)</td><td class="text-end">−{{ penalty }}</td></tr>
+        <tr><td>Penalty (below median)</td><td class="text-end">−{{ penalty }}</td></tr>
         {{ else }}
-        <tr class="text-success"><td>No penalty (≥ median)</td><td class="text-end">−0</td></tr>
+        <tr><td>No penalty (≥ median)</td><td class="text-end">−0</td></tr>
         {{ endif }}
         <tr class="fw-bold"><td>Round earnings</td><td class="text-end">{{ round_payoff }}</td></tr>
       </tbody>

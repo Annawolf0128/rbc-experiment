@@ -26,10 +26,15 @@ class Subsession(BaseSubsession):
     pass
 
 
+def session_num_rounds(obj):
+    return obj.session.config.get('num_rounds', C.NUM_ROUNDS)
+
+
 def creating_session(subsession: Subsession):
     if subsession.round_number == 1:
+        paid_round_max = session_num_rounds(subsession)
         for p in subsession.get_players():
-            p.participant.paid_round = random.randint(1, C.NUM_ROUNDS)
+            p.participant.paid_round = random.randint(1, paid_round_max)
 
 
 class Group(BaseGroup):
@@ -45,6 +50,11 @@ class Player(BasePlayer):
     x_choice = models.IntegerField(
         min=0, max=100,
         label='Choose a number between 0 and 100',
+    )
+    belief_median = models.IntegerField(
+        min=0, max=100,
+        label='What do you think the group median will be in this round?',
+        blank=True,
     )
     cost = models.FloatField(initial=0)
     penalty_paid = models.FloatField(initial=0)
@@ -76,13 +86,48 @@ class Player(BasePlayer):
         label="How does the number you choose affect your cost?",
         widget=widgets.RadioSelect,
     )
+    quiz_equal_earnings = models.StringField(
+        choices=[
+            ('no_penalty_formula', '100 − x²/200'),
+            ('penalty_formula', '100 − x²/200 − 20'),
+            ('linear_formula', '100 − x − 20'),
+        ],
+        label=(
+            "Suppose your number is x, the group median is y, and penalty = 20, with x = y. "
+            "What are your earnings for the round?"
+        ),
+        widget=widgets.RadioSelect,
+    )
+    quiz_below_earnings = models.StringField(
+        choices=[
+            ('no_penalty_formula', '100 − x²/200'),
+            ('penalty_formula', '100 − x²/200 − 20'),
+            ('linear_formula', '100 − x − 20'),
+        ],
+        label=(
+            "Suppose your number is x, the group median is y, and penalty = 20, with x < y. "
+            "What are your earnings for the round?"
+        ),
+        widget=widgets.RadioSelect,
+    )
+    quiz_fixed_penalty = models.StringField(
+        choices=[
+            ('fixed', 'The penalty is the same fixed amount L.'),
+            ('distance', 'The penalty is larger when x is farther below y.'),
+            ('half', 'The penalty is half of L.'),
+        ],
+        label="If x < y, does the penalty depend on how far x is below y?",
+        widget=widgets.RadioSelect,
+    )
 
     survey_risk = models.IntegerField(
+        choices=[(i, str(i)) for i in range(11)],
         min=0, max=10,
         label=(
             "Q1. How would you rate your willingness to take risks in general? "
             "(0 = completely unwilling, 10 = fully prepared to take risks)"
         ),
+        widget=widgets.RadioSelectHorizontal,
         blank=True,
     )
     survey_strategy = models.LongStringField(
@@ -100,15 +145,40 @@ class Player(BasePlayer):
         widget=widgets.RadioSelect,
         blank=True,
     )
+    survey_use_prior_medians = models.StringField(
+        choices=[
+            ('yes', 'Yes'),
+            ('sometimes', 'Sometimes'),
+            ('no', 'No'),
+        ],
+        label="Did you use the medians from the previous two or more rounds to help make your decisions?",
+        widget=widgets.RadioSelect,
+        blank=True,
+    )
+    survey_median_importance = models.StringField(
+        choices=[
+            ('very', 'Very important'),
+            ('somewhat', 'Somewhat important'),
+            ('not_much', 'Not very important'),
+            ('not_at_all', 'Not important at all'),
+        ],
+        label="How important was the median in your decision-making?",
+        widget=widgets.RadioSelect,
+        blank=True,
+    )
     survey_best = models.StringField(
         choices=[
             ('all_zero', 'Everyone chooses 0'),
             ('middle', 'Middle values (~50)'),
             ('high', 'High values'),
-            ('unsure', 'Unsure'),
+            ('other', 'Others'),
         ],
         label="Q4. What do you think was the best outcome for the group?",
         widget=widgets.RadioSelect,
+        blank=True,
+    )
+    survey_best_other = models.StringField(
+        label="If others, please specify:",
         blank=True,
     )
     survey_gender = models.StringField(
@@ -167,13 +237,32 @@ def set_payoffs(group: Group):
 
 # ============ Pages ============
 
+class Welcome(Page):
+    @staticmethod
+    def is_displayed(player: Player):
+        return (
+            player.round_number == 1
+            and player.session.config.get('show_welcome', False)
+        )
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        return dict(
+            n=player.session.num_participants,
+            num_rounds=session_num_rounds(player),
+        )
+
+
 class Consent(Page):
     form_model = 'player'
     form_fields = ['consent_given']
 
     @staticmethod
     def is_displayed(player: Player):
-        return player.round_number == 1
+        return (
+            player.round_number == 1
+            and player.session.config.get('show_consent', True)
+        )
 
     @staticmethod
     def error_message(player: Player, values):
@@ -193,13 +282,20 @@ class Instructions(Page):
             E=C.ENDOWMENT,
             K=C.K,
             n=player.session.num_participants,
-            num_rounds=C.NUM_ROUNDS,
+            other_players=player.session.num_participants - 1,
+            num_rounds=session_num_rounds(player),
+            point_value=player.session.config.get('real_world_currency_per_point', 1),
         )
 
 
 class Quiz(Page):
     form_model = 'player'
-    form_fields = ['quiz_below_median', 'quiz_match_median', 'quiz_cost']
+    form_fields = [
+        'quiz_match_median',
+        'quiz_equal_earnings',
+        'quiz_below_earnings',
+        'quiz_fixed_penalty',
+    ]
 
     @staticmethod
     def is_displayed(player: Player):
@@ -208,9 +304,10 @@ class Quiz(Page):
     @staticmethod
     def error_message(player: Player, values):
         correct = dict(
-            quiz_below_median='yes',
             quiz_match_median='no_penalty',
-            quiz_cost='higher',
+            quiz_equal_earnings='no_penalty_formula',
+            quiz_below_earnings='penalty_formula',
+            quiz_fixed_penalty='fixed',
         )
         wrong = [k for k, v in correct.items() if values.get(k) != v]
         if wrong:
@@ -225,9 +322,37 @@ class Quiz(Page):
         )
 
 
+class Belief(Page):
+    form_model = 'player'
+    form_fields = ['belief_median']
+
+    @staticmethod
+    def is_displayed(player: Player):
+        return (
+            player.round_number <= session_num_rounds(player)
+            and player.session.config.get('elicit_belief', False)
+        )
+
+    @staticmethod
+    def vars_for_template(player: Player):
+        return dict(
+            round_number=player.round_number,
+            num_rounds=session_num_rounds(player),
+        )
+
+
 class Choice(Page):
     form_model = 'player'
     form_fields = ['x_choice']
+
+    @staticmethod
+    def is_displayed(player: Player):
+        return player.round_number <= session_num_rounds(player)
+
+    @staticmethod
+    def error_message(player: Player, values):
+        if values.get('x_choice') is None:
+            return "Please choose a number and confirm your submission."
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -236,11 +361,15 @@ class Choice(Page):
             E=C.ENDOWMENT,
             K=C.K,
             round_number=player.round_number,
-            num_rounds=C.NUM_ROUNDS,
+            num_rounds=session_num_rounds(player),
         )
 
 
 class WaitForGroup(WaitPage):
+    @staticmethod
+    def is_displayed(player: Player):
+        return player.round_number <= session_num_rounds(player)
+
     @staticmethod
     def after_all_players_arrive(group: Group):
         set_payoffs(group)
@@ -248,8 +377,13 @@ class WaitForGroup(WaitPage):
 
 class Results(Page):
     @staticmethod
+    def is_displayed(player: Player):
+        return player.round_number <= session_num_rounds(player)
+
+    @staticmethod
     def vars_for_template(player: Player):
         median = player.group.median_x
+        num_rounds = session_num_rounds(player)
         return dict(
             x=player.x_choice,
             cost=round(player.cost, 2),
@@ -261,8 +395,8 @@ class Results(Page):
             K=C.K,
             L=player.session.config.get('penalty', PENALTY_LOW),
             round_number=player.round_number,
-            num_rounds=C.NUM_ROUNDS,
-            is_last_round=player.round_number == C.NUM_ROUNDS,
+            num_rounds=num_rounds,
+            is_last_round=player.round_number == num_rounds,
         )
 
 
@@ -270,9 +404,11 @@ class Survey(Page):
     form_model = 'player'
     form_fields = [
         'survey_risk',
-        'survey_strategy',
         'survey_use_median',
+        'survey_use_prior_medians',
+        'survey_median_importance',
         'survey_best',
+        'survey_best_other',
         'survey_prior_bc',
         'survey_game_theory',
         'survey_gender',
@@ -281,13 +417,13 @@ class Survey(Page):
 
     @staticmethod
     def is_displayed(player: Player):
-        return player.round_number == C.NUM_ROUNDS
+        return player.round_number == session_num_rounds(player)
 
 
 class Payment(Page):
     @staticmethod
     def is_displayed(player: Player):
-        return player.round_number == C.NUM_ROUNDS
+        return player.round_number == session_num_rounds(player)
 
     @staticmethod
     def vars_for_template(player: Player):
@@ -296,18 +432,24 @@ class Payment(Page):
         paid_amount = paid_player.round_payoff
         player.payoff = paid_amount
         fee = player.session.config.get('participation_fee', 0)
+        point_value = player.session.config.get('real_world_currency_per_point', 1)
+        bonus = paid_amount * point_value
         return dict(
             paid_round=paid_round,
             paid_amount=round(paid_amount, 2),
+            point_value=point_value,
+            bonus=round(bonus, 2),
             participation_fee=fee,
-            total=round(paid_amount + fee, 2),
+            total=round(bonus + fee, 2),
         )
 
 
 page_sequence = [
+    Welcome,
     Consent,
     Instructions,
     Quiz,
+    Belief,
     Choice,
     WaitForGroup,
     Results,

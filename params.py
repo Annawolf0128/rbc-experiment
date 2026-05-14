@@ -10,7 +10,7 @@ Restart `otree devserver` after editing for changes to take effect.
 # ============================================================
 ENDOWMENT     = 100      # E   each round starts with this many points
 COST_DIVISOR  = 200      # k   cost = x^2 / k  (so x=100 costs 50, x=10 costs 0.5)
-NUM_ROUNDS    = 12       # T   how many rounds per session
+NUM_ROUNDS    = 20       # T   how many rounds per session
 
 # ============================================================
 # Treatment parameters
@@ -25,4 +25,4 @@ GROUP_SIZE_LARGE = 15    # n   participants per session in "large group" treatme
 # Payment parameters
 # ============================================================
 SHOW_UP_FEE         = 5.00    # USD paid to every participant who completes (regardless of choices)
-CURRENCY_PER_POINT  = 1.00    # USD per 1 oTree point (so 1 point = $1.00)
+CURRENCY_PER_POINT  = 0.50    # USD per 1 oTree point (so 1 point = $0.50)
