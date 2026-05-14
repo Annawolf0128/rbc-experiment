@@ -137,9 +137,9 @@ class Player(BasePlayer):
     survey_use_median = models.StringField(
         choices=[
             ('always', 'Always'),
+            ('often', 'Often'),
             ('sometimes', 'Sometimes'),
-            ('no_fixed', 'No fixed strategy'),
-            ('ignored', "No, I ignored it"),
+            ('never', 'Never'),
         ],
         label="Q3. Did you use the previous round's median to help you make your decisions?",
         widget=widgets.RadioSelect,
@@ -158,9 +158,10 @@ class Player(BasePlayer):
     )
     survey_use_prior_medians = models.StringField(
         choices=[
-            ('yes', 'Yes'),
+            ('always', 'Always'),
+            ('often', 'Often'),
             ('sometimes', 'Sometimes'),
-            ('no', 'No'),
+            ('never', 'Never'),
         ],
         label="Q5. Did you use the medians from the previous two or more rounds to help make your decisions?",
         widget=widgets.RadioSelect,
