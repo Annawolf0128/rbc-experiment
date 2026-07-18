@@ -46,19 +46,6 @@ git -c http.version=HTTP/1.1 clone https://github.com/Annawolf0128/rbc-experimen
 
 If it still cannot connect to `github.com:443`, check the computer's VPN, firewall, or proxy settings. Proxy addresses are machine- and network-specific, so do not copy another user's localhost proxy address.
 
-## Collaborator smoke test
-
-For a quick solo check, open http://localhost:8000/demo/ and select `rbc_preview`.
-
-To verify arrival-based small-group formation:
-
-1. Open http://localhost:8000/sessions and create a session using `rbc_small_low` or `rbc_small_high` with 12 participants.
-2. Open the first 5 participant links in separate browser tabs or windows. They should form one group and proceed.
-3. Open links 6–10. They should form a second group and proceed.
-4. Open links 11–12. They should remain on the initial waiting page until 3 more participants arrive.
-
-For a large-group treatment, create the session with exactly 15 participants. Group membership remains fixed in all subsequent rounds.
-
 ## Treatment configurations
 
 | Config | Session grouping | L | Rounds | x̄ = √(Lk) | Purpose |
