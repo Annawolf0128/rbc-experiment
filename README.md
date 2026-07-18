@@ -21,17 +21,17 @@ Open http://localhost:8000/demo/ in a browser. For multi-player testing, open ad
 
 ## Treatment configurations
 
-| Config | n | L | Rounds | x̄ = √(Lk) | Purpose |
+| Config | Session grouping | L | Rounds | x̄ = √(Lk) | Purpose |
 |---|---|---|---|---|---|
 | `rbc_preview` | 1 | 20 | 2 | 63.2 | Solo quick test, no belief elicitation |
 | `rbc_test_2p_2r` | 2 | 20 | 2 | 63.2 | 2-player quick test |
 | `rbc_test_2p_2r_belief` | 2 | 20 | 2 | 63.2 | 2-player quick test with belief elicitation |
-| `rbc_small_low` | 5 | 20 | 20 | 63.2 | Small group, low penalty |
-| `rbc_small_high` | 5 | 40 | 20 | 89.4 | Small group, high penalty |
-| `rbc_large_low` | 15 | 20 | 20 | 63.2 | Large group, low penalty |
-| `rbc_large_high` | 15 | 40 | 20 | 89.4 | Large group, high penalty |
-| `rbc_small_low_belief` | 5 | 20 | 20 | 63.2 | Small group, low penalty, with belief elicitation |
-| `rbc_large_low_belief` | 15 | 20 | 20 | 63.2 | Large group, low penalty, with belief elicitation |
+| `rbc_small_low` | Groups of 5 (15 participants by default) | 20 | 20 | 63.2 | Small groups formed by arrival, low penalty |
+| `rbc_small_high` | Groups of 5 (15 participants by default) | 40 | 20 | 89.4 | Small groups formed by arrival, high penalty |
+| `rbc_large_low` | 1 × 15 | 20 | 20 | 63.2 | One large group, low penalty |
+| `rbc_large_high` | 1 × 15 | 40 | 20 | 89.4 | One large group, high penalty |
+| `rbc_small_low_belief` | Groups of 5 (15 participants by default) | 20 | 20 | 63.2 | Small groups formed by arrival, low penalty, with belief elicitation |
+| `rbc_large_low_belief` | 1 × 15 | 20 | 20 | 63.2 | One large group, low penalty, with belief elicitation |
 
 Shared parameters: endowment `E = 100`, cost denominator `k = 200`, `T = 20` rounds by default.
 
@@ -87,6 +87,6 @@ For a public URL (so remote participants can join), deploy via [oTree Hub](https
 
 ## Implementation notes
 
-- `C.PLAYERS_PER_GROUP = None`, so every participant in a session is placed in a single group; group size is controlled by `num_participants` per session.
+- Main-treatment sessions target 15 participants by default. Small-group treatments form a group whenever 5 participants reach the initial waiting page, so a session with 12 arrivals can run two complete groups while the remaining 2 continue waiting for 3 more participants. Large-group treatments still require exactly 15 participants. Once formed, group membership stays unchanged across rounds.
 - The randomly paid round is drawn once in `creating_session()` and stored on `participant.paid_round`, independent of in-session behaviour.
 - The consent page body is intentionally a placeholder. Replace the text in `rbc/Consent.html` with the institution-specific consent statement (purpose, voluntary participation, data use, contact, ethics ID) before any real run.

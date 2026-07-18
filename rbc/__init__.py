@@ -16,7 +16,9 @@ earnings of one randomly selected round.
 
 class C(BaseConstants):
     NAME_IN_URL = 'rbc'
-    PLAYERS_PER_GROUP = None  # all participants in one group; size = num_participants
+    # Group size is treatment-specific, so groups are formed dynamically on the
+    # first wait page rather than through this static constant.
+    PLAYERS_PER_GROUP = None
     NUM_ROUNDS = NUM_ROUNDS
     ENDOWMENT = ENDOWMENT
     K = COST_DIVISOR
@@ -32,9 +34,27 @@ def session_num_rounds(obj):
 
 def creating_session(subsession: Subsession):
     if subsession.round_number == 1:
+        players = subsession.get_players()
+        expected_session_size = subsession.session.config.get('expected_session_size')
+        if expected_session_size is not None and len(players) != expected_session_size:
+            raise RuntimeError(
+                f"This treatment requires exactly {expected_session_size} participants, "
+                f"but the session was created with {len(players)}."
+            )
+
         paid_round_max = session_num_rounds(subsession)
-        for p in subsession.get_players():
+        for p in players:
             p.participant.paid_round = random.randint(1, paid_round_max)
+
+
+def group_by_arrival_time_method(subsession: Subsession, waiting_players):
+    group_size = subsession.session.config.get('group_size')
+    if group_size is not None and len(waiting_players) >= group_size:
+        return waiting_players[:group_size]
+
+
+def player_group_size(player):
+    return len(player.group.get_players())
 
 
 class Group(BaseGroup):
@@ -249,6 +269,18 @@ def set_payoffs(group: Group):
 
 # ============ Pages ============
 
+class GroupFormationWaitPage(WaitPage):
+    group_by_arrival_time = True
+    title_text = "Waiting for your group"
+    body_text = "The experiment will begin as soon as enough participants are present."
+
+    @staticmethod
+    def is_displayed(player: Player):
+        return (
+            player.round_number == 1
+            and player.session.config.get('group_size') is not None
+        )
+
 class Welcome(Page):
     @staticmethod
     def is_displayed(player: Player):
@@ -260,7 +292,7 @@ class Welcome(Page):
     @staticmethod
     def vars_for_template(player: Player):
         return dict(
-            n=player.session.num_participants,
+            n=player_group_size(player),
             num_rounds=session_num_rounds(player),
         )
 
@@ -289,12 +321,13 @@ class Instructions(Page):
 
     @staticmethod
     def vars_for_template(player: Player):
+        group_size = player_group_size(player)
         return dict(
             L=player.session.config.get('penalty', PENALTY_LOW),
             E=C.ENDOWMENT,
             K=C.K,
-            n=player.session.num_participants,
-            other_players=player.session.num_participants - 1,
+            n=group_size,
+            other_players=group_size - 1,
             num_rounds=session_num_rounds(player),
             point_value=player.session.config.get('real_world_currency_per_point', 1),
         )
@@ -459,6 +492,7 @@ class Payment(Page):
 
 
 page_sequence = [
+    GroupFormationWaitPage,
     Welcome,
     Consent,
     Instructions,
