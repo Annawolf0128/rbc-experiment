@@ -6,18 +6,58 @@ Each round, participants choose an integer in `[0, 100]`. Higher numbers cost mo
 
 ## Quick start
 
+Python 3.9 is required. Run the commands for your operating system one at a time so that, if cloning or installation fails, later commands do not run in the wrong directory.
+
+### macOS / Linux
+
 ```bash
 git clone https://github.com/Annawolf0128/rbc-experiment.git
 cd rbc-experiment
-python3 -m venv venv
+python3.9 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 otree devserver
 ```
 
-Open http://localhost:8000/demo/ in a browser. For multi-player testing, open additional incognito windows to the same demo URL.
+### Windows PowerShell
 
-> Requires Python 3.9 (use a 3.9 venv specifically; oTree 5.x is not compatible with 3.10+ until you upgrade to oTree 6.x).
+```powershell
+git clone https://github.com/Annawolf0128/rbc-experiment.git
+Set-Location rbc-experiment
+py -3.9 -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+otree devserver
+```
+
+If PowerShell blocks `Activate.ps1`, open Command Prompt in the repository and activate with `venv\Scripts\activate.bat` instead.
+
+Open http://localhost:8000/demo/ after the server starts.
+
+### Clone troubleshooting
+
+If `git clone` reports an HTTP/2 framing error, retry it with HTTP/1.1:
+
+```bash
+git -c http.version=HTTP/1.1 clone https://github.com/Annawolf0128/rbc-experiment.git
+```
+
+If it still cannot connect to `github.com:443`, check the computer's VPN, firewall, or proxy settings. Proxy addresses are machine- and network-specific, so do not copy another user's localhost proxy address.
+
+## Collaborator smoke test
+
+For a quick solo check, open http://localhost:8000/demo/ and select `rbc_preview`.
+
+To verify arrival-based small-group formation:
+
+1. Open http://localhost:8000/sessions and create a session using `rbc_small_low` or `rbc_small_high` with 12 participants.
+2. Open the first 5 participant links in separate browser tabs or windows. They should form one group and proceed.
+3. Open links 6–10. They should form a second group and proceed.
+4. Open links 11–12. They should remain on the initial waiting page until 3 more participants arrive.
+
+For a large-group treatment, create the session with exactly 15 participants. Group membership remains fixed in all subsequent rounds.
 
 ## Treatment configurations
 
@@ -38,7 +78,7 @@ Shared parameters: endowment `E = 100`, cost denominator `k = 200`, `T = 20` rou
 ## Page flow
 
 ```
-Welcome → Consent → Instructions → Quiz (comprehension check)
+Group formation wait page → Welcome → Consent → Instructions → Quiz
        → 20 × ([Belief, if enabled] → Choice → WaitForGroup → Results)
        → Survey (risk, strategy, median-use, and demographics items)
        → Payment (show-up fee + one randomly selected round's earnings)
