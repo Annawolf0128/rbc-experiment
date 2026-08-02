@@ -4,7 +4,7 @@ This repository contains two independent oTree projects for the same Reversed Be
 
 | Project | Venue | Official session plan | Participants covering all six arms |
 |---|---|---|---:|
-| [`site1_US/`](site1_US/) | Site 1 — US | Six arm-specific configs: three 5-person sessions and three 15-person sessions | 60 |
+| [`site1_US/`](site1_US/) | Site 1 — US | Six arm-specific configs, 15 participants per session | 90 |
 | [`site2_Singapore/`](site2_Singapore/) | Site 2 — Singapore | Three 20-person configs; each forms one group of 15 and one group of 5 | 60 |
 
 ## Treatment coverage

@@ -1,6 +1,6 @@
 # RBC experiment — Site 1 (US)
 
-Site 1 (US) oTree implementation of the Reversed Beauty Contest (RBC) experiment. This version runs the six treatment arms in separate sessions: 5 participants for each small-group arm and 15 for each large-group arm.
+Site 1 (US) oTree implementation of the Reversed Beauty Contest (RBC) experiment. This version runs the six treatment arms in separate 15-participant sessions.
 
 Each round, participants choose an integer in `[0, 100]`. Higher numbers cost more (cost = x²/k). A fixed penalty `L` is paid by anyone whose choice is **strictly below the group median**. The combination of cost and below-median penalty creates a "match-or-quit" best response and a continuum of symmetric equilibria.
 
@@ -53,11 +53,11 @@ If it still cannot connect to `github.com:443`, check the computer's VPN, firewa
 | `rbc_preview` | 1 | 20 | 2 | 63.2 | Solo quick test, no belief elicitation |
 | `rbc_test_2p_2r` | 2 | 20 | 2 | 63.2 | 2-player quick test |
 | `rbc_test_2p_2r_belief` | 2 | 20 | 2 | 63.2 | 2-player quick test with belief elicitation |
-| `rbc_small_low` | 1 × 5 | 20 | 20 | 63.2 | One small group, low penalty |
-| `rbc_small_high` | 1 × 5 | 40 | 20 | 89.4 | One small group, high penalty |
+| `rbc_small_low` | 3 × 5 (15 total) | 20 | 20 | 63.2 | Three small groups, low penalty |
+| `rbc_small_high` | 3 × 5 (15 total) | 40 | 20 | 89.4 | Three small groups, high penalty |
 | `rbc_large_low` | 1 × 15 | 20 | 20 | 63.2 | One large group, low penalty |
 | `rbc_large_high` | 1 × 15 | 40 | 20 | 89.4 | One large group, high penalty |
-| `rbc_small_low_belief` | 1 × 5 | 20 | 20 | 63.2 | One small group, low penalty, with belief elicitation |
+| `rbc_small_low_belief` | 3 × 5 (15 total) | 20 | 20 | 63.2 | Three small groups, low penalty, with belief elicitation |
 | `rbc_large_low_belief` | 1 × 15 | 20 | 20 | 63.2 | One large group, low penalty, with belief elicitation |
 
 Shared parameters: endowment `E = 100`, cost denominator `k = 200`, `T = 20` rounds by default.
@@ -114,6 +114,6 @@ For a public URL (so remote participants can join), deploy via [oTree Hub](https
 
 ## Implementation notes
 
-- Every official session requires exactly the arm's group size: 5 participants for a small-group arm and 15 participants for a large-group arm. One complete six-arm set therefore requires 60 participants. Once formed, group membership stays unchanged across rounds.
+- Every official Site 1 session requires exactly 15 participants. A small-group treatment forms three independent groups of 5 under the same treatment; a large-group treatment forms one group of 15. Running all six official configurations once therefore recruits 90 participants. Once formed, group membership stays unchanged across rounds.
 - The randomly paid round is drawn once in `creating_session()` and stored on `participant.paid_round`, independent of in-session behaviour.
 - The consent page body is intentionally a placeholder. Replace the text in `rbc/Consent.html` with the institution-specific consent statement (purpose, voluntary participation, data use, contact, ethics ID) before any real run.
