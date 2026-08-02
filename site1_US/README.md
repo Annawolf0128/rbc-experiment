@@ -1,6 +1,6 @@
 # RBC experiment — Site 1 (US)
 
-Site 1 (US) oTree implementation of the Reversed Beauty Contest (RBC) experiment. This version runs the six treatment arms in separate 15-participant sessions.
+Site 1 (US) oTree implementation of the Reversed Beauty Contest (RBC) experiment. This version runs the six treatment arms in separate sessions, with a recruitment target of 15 participants per session.
 
 Each round, participants choose an integer in `[0, 100]`. Higher numbers cost more (cost = x²/k). A fixed penalty `L` is paid by anyone whose choice is **strictly below the group median**. The combination of cost and below-median penalty creates a "match-or-quit" best response and a continuum of symmetric equilibria.
 
@@ -114,6 +114,7 @@ For a public URL (so remote participants can join), deploy via [oTree Hub](https
 
 ## Implementation notes
 
-- Every official Site 1 session requires exactly 15 participants. A small-group treatment forms three independent groups of 5 under the same treatment; a large-group treatment forms one group of 15. Running all six official configurations once therefore recruits 90 participants. Once formed, group membership stays unchanged across rounds.
+- Site 1 targets 15 recruits per official session. A small-group treatment forms complete groups in blocks of 5 under the same treatment. With 15 participants it forms three groups; if only 12 attend, two groups of 5 can proceed and the remaining 2 do not participate. The experimenter should not send those 2 beyond the initial group-formation wait page and should handle any show-up compensation outside oTree. Large-group treatments still require exactly 15 participants. Once formed, group membership stays unchanged across rounds.
+- Running all six Site 1 configurations at their 15-person recruitment targets uses 90 participants. Actual participation in a small-group session may be lower when attendance is not divisible by 5.
 - The randomly paid round is drawn once in `creating_session()` and stored on `participant.paid_round`, independent of in-session behaviour.
 - The consent page body is intentionally a placeholder. Replace the text in `rbc/Consent.html` with the institution-specific consent statement (purpose, voluntary participation, data use, contact, ethics ID) before any real run.
