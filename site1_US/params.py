@@ -18,9 +18,8 @@ NUM_ROUNDS    = 20       # T   how many rounds per session
 PENALTY_LOW   = 20       # L   penalty for the "low penalty" treatments    -> xbar = sqrt(L*k) ~ 63.2
 PENALTY_HIGH  = 40       # L   penalty for the "high penalty" treatments   -> xbar = sqrt(L*k) ~ 89.4
 
-SESSION_SIZE      = 15    # default/recruitment target for main-treatment sessions
-GROUP_SIZE_SMALL  = 5     # n   form one group whenever 5 participants have arrived
-GROUP_SIZE_LARGE  = 15    # n   1 group containing the whole session
+GROUP_SIZE_SMALL  = 5     # n   one small-arm session contains exactly 1 group of 5
+GROUP_SIZE_LARGE  = 15    # n   one large-arm session contains exactly 1 group of 15
 
 # ============================================================
 # Payment parameters

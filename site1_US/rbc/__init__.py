@@ -309,6 +309,10 @@ class Consent(Page):
         )
 
     @staticmethod
+    def vars_for_template(player: Player):
+        return dict(num_rounds=session_num_rounds(player))
+
+    @staticmethod
     def error_message(player: Player, values):
         if not values.get('consent_given'):
             return "You must check the box to consent to participate."

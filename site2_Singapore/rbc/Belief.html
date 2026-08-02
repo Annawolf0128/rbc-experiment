@@ -1,0 +1,32 @@
+{{ block title }}Round {{ round_number }} of {{ num_rounds }} — Your Prediction{{ endblock }}
+
+{{ block content }}
+<style>
+  .belief-card {
+    max-width: 720px;
+    margin: 28px auto;
+  }
+  .belief-card p {
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  .belief-field {
+    margin-top: 18px;
+  }
+</style>
+
+<div class="card belief-card">
+  <div class="card-body">
+    <h4 class="mb-3">Before choosing your number</h4>
+    <p>
+      Please predict the <strong>group median</strong> for this round.
+      Enter an integer between <strong>0</strong> and <strong>100</strong>.
+    </p>
+    <div class="belief-field">
+      {{ formfield 'belief_median' }}
+    </div>
+  </div>
+</div>
+
+{{ next_button }}
+{{ endblock }}
