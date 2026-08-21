@@ -5,7 +5,7 @@ This repository contains two independent oTree projects for the same Reversed Be
 | Project | Venue | Official session plan | Participants covering all six arms |
 |---|---|---|---:|
 | [`site1_US/`](site1_US/) | Site 1 — US | Six arm-specific configs; target 15 per session, with small groups formed flexibly in blocks of 5 | 90 planned |
-| [`site2_Singapore/`](site2_Singapore/) | Site 2 — Singapore | Three 20-person configs; each forms one group of 15 and one group of 5 | 60 |
+| [`site2_Singapore/`](site2_Singapore/) | Site 2 — Singapore | Six arm-specific configs; 10 planned 15-person sessions, with three groups in each main no-belief block | 150 planned |
 
 ## Treatment coverage
 
@@ -18,7 +18,7 @@ Both projects implement the same six arms:
 5. Small–Low–Belief: group size 5, penalty 20, belief elicitation
 6. Large–Low–Belief: group size 15, penalty 20, belief elicitation
 
-Site 1 runs these as six separate configurations. Site 2 pairs the small and large groups within the same penalty/belief condition, so three sessions cover all six arms.
+Both sites run the six arms as separate session configurations. In Singapore, each official session recruits exactly 15 participants: a small-arm session forms three groups of 5, while a large-arm session forms one group of 15. The two no-belief large-group configurations are each run three times so that all four main no-belief blocks contain three groups; each belief configuration is run once.
 
 ## Running a project
 
