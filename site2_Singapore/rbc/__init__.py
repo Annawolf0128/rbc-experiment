@@ -8,8 +8,8 @@ from params import ENDOWMENT, COST_DIVISOR, NUM_ROUNDS, PENALTY_LOW
 doc = """
 Reversed Beauty Contest. Each round players choose a number x in [0, 100]; cost is
 x^2/k; a fixed penalty L is paid by anyone whose x is strictly below the group median.
-At site 2, each official session forms one group of 15 and one group of 5 under a
-shared session-level penalty and belief-elicitation condition. Comprehension quiz at
+At site 2, each official session runs a single treatment and forms either three groups
+of 5 or one group of 15. Comprehension quiz at
 start; SOEP risk Likert in exit survey; payment is the show-up fee plus the earnings
 of one randomly selected round.
 """

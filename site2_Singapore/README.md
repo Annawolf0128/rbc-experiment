@@ -53,11 +53,30 @@ If it still cannot connect to `github.com:443`, check the computer's VPN, firewa
 | `rbc_preview` | 1 | 20 | 2 | 63.2 | Solo quick test, no belief elicitation |
 | `rbc_test_2p_2r` | 2 | 20 | 2 | 63.2 | 2-player quick test |
 | `rbc_test_2p_2r_belief` | 2 | 20 | 2 | 63.2 | 2-player quick test with belief elicitation |
-| `rbc_site2_low` | 1 × 15 + 1 × 5 (20 total) | 20 | 20 | 63.2 | Covers Large–Low and Small–Low |
-| `rbc_site2_high` | 1 × 15 + 1 × 5 (20 total) | 40 | 20 | 89.4 | Covers Large–High and Small–High |
-| `rbc_site2_low_belief` | 1 × 15 + 1 × 5 (20 total) | 20 | 20 | 63.2 | Covers Large–Low–Belief and Small–Low–Belief |
+| `rbc_site2_small_low` | 3 × 5 (15 total) | 20 | 20 | 63.2 | Small–Low |
+| `rbc_site2_small_high` | 3 × 5 (15 total) | 40 | 20 | 89.4 | Small–High |
+| `rbc_site2_large_low` | 1 × 15 (15 total) | 20 | 20 | 63.2 | Large–Low |
+| `rbc_site2_large_high` | 1 × 15 (15 total) | 40 | 20 | 89.4 | Large–High |
+| `rbc_site2_small_low_belief` | 3 × 5 (15 total) | 20 | 20 | 63.2 | Small–Low–Belief |
+| `rbc_site2_large_low_belief` | 1 × 15 (15 total) | 20 | 20 | 63.2 | Large–Low–Belief |
 
 Shared parameters: endowment `E = 100`, cost denominator `k = 200`, `T = 20` rounds by default.
+
+## Planned Singapore sessions
+
+The same oTree configuration can be used to create more than one independent session. The planned run count is:
+
+| Treatment | oTree config | Groups per session | Sessions to run | Total groups | Participants |
+|---|---|---:|---:|---:|---:|
+| Small–Low | `rbc_site2_small_low` | 3 × 5 | 1 | 3 | 15 |
+| Small–High | `rbc_site2_small_high` | 3 × 5 | 1 | 3 | 15 |
+| Large–Low | `rbc_site2_large_low` | 1 × 15 | 3 | 3 | 45 |
+| Large–High | `rbc_site2_large_high` | 1 × 15 | 3 | 3 | 45 |
+| Small–Low–Belief | `rbc_site2_small_low_belief` | 3 × 5 | 1 | 3 | 15 |
+| Large–Low–Belief | `rbc_site2_large_low_belief` | 1 × 15 | 1 | 1 | 15 |
+| **Total** |  |  | **10** | **16** | **150** |
+
+This gives each of the four main no-belief blocks three independent groups. The two belief treatments are exploratory additions and each uses one 15-person session.
 
 ## Page flow
 
@@ -111,7 +130,7 @@ For a public URL (so remote participants can join), deploy via [oTree Hub](https
 
 ## Implementation notes
 
-- Every Site 2 official session requires exactly 20 participants. At the initial wait page, the first 15 arrivals form the large group and the remaining 5 form the small group. Group membership then stays unchanged across all rounds.
-- Run the three official configurations once each to cover all six treatment arms. Penalty and belief elicitation are constant within a session; only group size differs between its two groups.
+- Every Site 2 official session requires exactly 15 participants and contains one treatment only. A small-arm session forms three groups of 5; a large-arm session forms one group of 15. Group membership then stays unchanged across all rounds.
+- For the four main no-belief blocks, run each small-group configuration once and each large-group configuration three times, giving three groups per block. Run each belief configuration once. This schedule contains 10 sessions and 150 recruited participants in total.
 - The randomly paid round is drawn once in `creating_session()` and stored on `participant.paid_round`, independent of in-session behaviour.
 - The consent page body is intentionally a placeholder. Replace the text in `rbc/Consent.html` with the institution-specific consent statement (purpose, voluntary participation, data use, contact, ethics ID) before any real run.
