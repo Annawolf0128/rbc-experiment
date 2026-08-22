@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Experiment Budget Console</title>
+<style>
+  :root { color-scheme: light dark; }
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --surface-2: #f3f2ef; --border: #e3e2dd;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #8a8983;
+    --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+    --good: #008300; --warning: #eda100; --serious: #e34948;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --surface-2: #242422; --border: #3a3936;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+      --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+      --good: #00a300; --warning: #c98500; --serious: #e66767;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --surface-2: #242422; --border: #3a3936;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --good: #00a300; --warning: #c98500; --serious: #e66767;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Segoe UI", sans-serif; }
+  .viz-root { background: var(--surface-1); color: var(--text-primary); min-height: 100vh; padding: 24px clamp(12px,4vw,48px) 64px; }
+  .hdr { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  h1 { font-size: 20px; font-weight: 650; }
+  .sub { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+  .langbtn { flex: none; cursor: pointer; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text-secondary); }
+  .langbtn:hover { color: var(--text-primary); }
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 22px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin: 18px 0 6px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
+  .ctl label b { color: var(--text-primary); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ctl input[type=range] { width: 100%; accent-color: var(--series-1); margin-top: 6px; }
+  .numrow { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 2px 0; font-size: 13px; color: var(--text-secondary); }
+  .numrow label { display: flex; align-items: center; gap: 6px; }
+  .numrow input { width: 80px; padding: 3px 6px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface-1); color: var(--text-primary); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0; }
+  .tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .tile .k { font-size: 12px; color: var(--text-secondary); }
+  .tile .v { font-size: 24px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .tile .d { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; margin-top: 4px; }
+  .badge.good { color: var(--good); } .badge.warning { color: var(--warning); } .badge.serious { color: var(--serious); }
+  h2 { font-size: 15px; font-weight: 650; margin: 26px 0 10px; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 720px; }
+  th, td { padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th { color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid var(--border); }
+  td:first-child, th:first-child { text-align: left; }
+  tbody tr + tr td { border-top: 1px solid var(--border); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: baseline; }
+  .hist { margin-top: 6px; }
+  .legend { display: flex; gap: 18px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 10px; }
+  .hrow { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; margin-bottom: 7px; }
+  .hlab { font-size: 12px; color: var(--text-secondary); text-align: right; font-variant-numeric: tabular-nums; }
+  .bars { display: flex; flex-direction: column; gap: 2px; }
+  .bar { height: 13px; border-radius: 0 4px 4px 0; position: relative; min-width: 1px; }
+  .bar span { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .theory { font-size: 13px; color: var(--text-secondary); line-height: 1.9; margin-top: 8px; }
+  .theory b { color: var(--text-primary); }
+  details { margin-top: 28px; font-size: 12.5px; color: var(--text-muted); }
+  details summary { cursor: pointer; color: var(--text-secondary); }
+  details p { margin: 8px 0 0; line-height: 1.7; max-width: 72ch; }
+  .tip { position: fixed; pointer-events: none; z-index: 10; display: none;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; font-size: 12px; color: var(--text-primary); box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+</style>
+</head>
+<body>
+<div class="viz-root">
+  <div class="hdr">
+    <div><h1 id="t_h1"></h1><div class="sub" id="t_sub"></div></div>
+    <button class="langbtn" id="langbtn" type="button"></button>
+  </div>
+  <div class="controls" id="controls"></div>
+  <div class="numrow" id="numrow"></div>
+  <div class="kpis" id="kpis"></div>
+  <h2 id="t_qtitle"></h2>
+  <div class="tablewrap"><table id="qtable"></table></div>
+  <h2 id="t_htitle"></h2>
+  <div class="hist" id="hist"></div>
+  <div class="theory" id="theory"></div>
+  <details><summary id="t_sum"></summary><p id="t_sumbody"></p></details>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+"use strict";
+/* ╔═══════════════ 项目定制区（PROJECT-SPECIFIC MODEL）═══════════════╗
+   安装到具体项目时只改这一块；下方 shell 是通用的。
+   接口见 SKILL.md。此处内置的是 trust-reinvestment 项目的参考实现。 */
+window.MODEL = {
+  title: { zh: "RBC 实验预算控制台", en: "RBC Budget Console" },
+  subtitle: {
+    zh: "反向选美 · 每人支付 = 出场费 + 随机抽 1 轮收益 × 兑换率 · 单轮收益 = 100 − x²/200 − L·1{x<组中位数} · 行为模拟 30,000 人/组（固定种子）· 金额为美元",
+    en: "Reversed Beauty Contest · pay = show-up fee + one random round × rate · round payoff = 100 − x²/200 − L·1{x<median} · 30,000 simulated participants per cell (fixed seed) · USD",
+  },
+  currency: { zh: "$", en: "$", prefix: true },
+  fmtBig: (x, fmt) => x >= 1e3 ? x.toLocaleString("en-US", { maximumFractionDigits: 0 }) : fmt(x, 1),
+  params: [
+    { id:"rate", label:{zh:"兑换率（$/点）",en:"Exchange rate ($/pt)"}, min:0.10, max:1.00, step:0.05, value:0.50,
+      show:v=>"$"+v.toFixed(2) },
+    { id:"T", label:{zh:"轮数 T",en:"Rounds T"}, min:5, max:30, step:1, value:20,
+      show:(v,lang)=>v+(lang==="zh"?" 轮":"") },
+    { id:"Llow", label:{zh:"低罚金 L",en:"Low penalty L"}, min:5, max:50, step:5, value:20,
+      show:v=>v+" pt" },
+    { id:"Lhigh", label:{zh:"高罚金 L",en:"High penalty L"}, min:10, max:80, step:5, value:40,
+      show:v=>v+" pt" },
+    { id:"sLow", label:{zh:"躺平者比例（选 0–15）",en:"Quitter share (picks 0–15)"}, min:0, max:0.6, step:0.05, value:0.15,
+      show:v=>(100*v).toFixed(0)+"%" },
+    { id:"sRand", label:{zh:"随机玩家比例",en:"Noise-player share"}, min:0, max:0.5, step:0.05, value:0.15,
+      show:v=>(100*v).toFixed(0)+"%" },
+  ],
+  numbers: [
+    { id:"fee", label:{zh:"出场费（$）",en:"Show-up fee ($)"}, value:5, step:0.5, min:0 },
+  ],
+  people: { value:150, step:15 },          // site2 计划：10 场 × 15 人
+  alert:  { value:8500, step:500 },
+  cells: [ { key:"low", label:"low L", color:1 }, { key:"high", label:"high L", color:2 } ],
+  clampParams(p, els){ if(p.Lhigh<p.Llow){ p.Lhigh=p.Llow; if(els&&els.Lhigh) els.Lhigh.value=p.Lhigh; } return p; },
+
+  // ---- 行为模拟：按组模拟（中位数是组级变量），返回每人最终支付 ----
+  NP: 30000,
+  E: 100, K: 200,   // params.py ENDOWMENT / COST_DIVISOR；改了要同步
+  simulate(p, mkrng){
+    const E=this.E, K=this.K, NP=this.NP;
+    // 每组别内 5 人组被试占比，按场次计划：低罚金 30/90=1/3，高罚金 15/60=1/4
+    const simCell=(L, w5, seed)=>{
+      const rng=mkrng(seed);
+      const xbar=Math.min(100, Math.sqrt(L*K));
+      const out=new Float64Array(NP); let idx=0;
+      const plans=[[5, Math.round(NP*w5/5)], [15, Math.ceil(NP*(1-w5)/15)]];
+      for(const [n, ng] of plans){
+        for(let g=0; g<ng && idx<NP; g++){
+          const type=new Array(n);
+          for(let i=0;i<n;i++){ const u=rng(); type[i]= u<p.sLow?0 : u<p.sLow+p.sRand?1 : 2; }
+          const pay=new Array(n); for(let i=0;i<n;i++) pay[i]=new Float64Array(p.T);
+          const xs=new Float64Array(n);
+          let prevMed=null;
+          for(let t=0;t<p.T;t++){
+            for(let i=0;i<n;i++){
+              let x;
+              if(type[i]===0) x=Math.floor(rng()*16);                       // 躺平：低值省成本认罚
+              else if(type[i]===1) x=Math.floor(rng()*101);                 // 随机
+              else {                                                        // 爬升者：向均衡值追赶上轮中位数
+                if(prevMed===null) x=30+Math.floor(rng()*31);
+                else x=Math.min(Math.round(xbar), Math.round(prevMed)+2+Math.floor(rng()*7));
+                x=Math.max(0, Math.min(100, x+Math.floor(rng()*7)-3));
+              }
+              xs[i]=x;
+            }
+            const sorted=Array.from(xs).sort((a,b)=>a-b);
+            const med = n%2 ? sorted[(n-1)/2] : (sorted[n/2-1]+sorted[n/2])/2;
+            for(let i=0;i<n;i++) pay[i][t] = E - xs[i]*xs[i]/K - (xs[i]<med ? L : 0);
+            prevMed=med;
+          }
+          for(let i=0;i<n && idx<NP;i++){
+            const paidRound=Math.floor(rng()*p.T);                          // 随机抽 1 轮支付
+            out[idx++]=p.fee + p.rate*pay[i][paidRound];
+          }
+        }
+      }
+      return out.slice(0, idx);
+    };
+    return { cells:{ low:simCell(p.Llow, 1/3, 11), high:simCell(p.Lhigh, 1/4, 12) }, extra:{} };
+  },
+
+  // 解析上界：单轮收益封顶恰为 E=100 点（x=0 且组中位数=0，结构上不可能超过）
+  bound(p){ return p.fee + p.rate*this.E; },
+  boundThresholds: [60, 100],
+
+  tiles(p, sim, ctx){
+    const m=a=>{let s=0;for(const x of a)s+=x;return s/a.length;};
+    const mLow=m(sim.cells.low), mHigh=m(sim.cells.high);
+    const wLow=0.6;                                    // 场次计划：低罚金 6/10 场（90/150 人）
+    const weighted=p.npeople*(wLow*mLow+(1-wLow)*mHigh);
+    const minPay=p.fee + p.rate*(this.E - 99*99/this.K - p.Lhigh);
+    return [
+      { k:{zh:"按场次计划加权预算",en:"Design-weighted budget"},
+        v:ctx.money(weighted),
+        d:{zh:`低罚金 60% × $${mLow.toFixed(2)} + 高罚金 40% × $${mHigh.toFixed(2)}`,
+           en:`60% low × $${mLow.toFixed(2)} + 40% high × $${mHigh.toFixed(2)}`} },
+      { k:{zh:"理论最低支付 / 人",en:"Theoretical min pay / person"},
+        v:ctx.money(minPay),
+        d:{zh:"x=99 且中位数=100 的极端组合；结构上不可能为负",
+           en:"worst case x=99 with median=100; negative pay is structurally impossible"} },
+    ];
+  },
+
+  theory(p, ctx){
+    const xl=Math.sqrt(p.Llow*this.K), xh=Math.sqrt(p.Lhigh*this.K);
+    const el=this.E-xl*xl/this.K, eh=this.E-xh*xh/this.K;
+    const zh=`均衡值 x̄=√(L·K)：低罚金 <b>${xl.toFixed(1)}</b>（均衡收益 ${el.toFixed(0)} 点 → $${(p.fee+p.rate*el).toFixed(2)}/人）｜ 高罚金 <b>${xh.toFixed(1)}</b>（${eh.toFixed(0)} 点 → $${(p.fee+p.rate*eh).toFixed(2)}/人）｜ 合作上限：全组选 0 → 人人 ${this.E} 点 → $${(p.fee+p.rate*this.E).toFixed(2)}/人`;
+    const en=`Equilibrium x̄=√(L·K): low <b>${xl.toFixed(1)}</b> (payoff ${el.toFixed(0)} pt → $${(p.fee+p.rate*el).toFixed(2)}/person) | high <b>${xh.toFixed(1)}</b> (${eh.toFixed(0)} pt → $${(p.fee+p.rate*eh).toFixed(2)}/person) | cooperative cap: all pick 0 → ${this.E} pt each → $${(p.fee+p.rate*this.E).toFixed(2)}/person`;
+    return {zh, en};
+  },
+
+  buckets: [[0,10,"<10"],[10,20,"10–20"],[20,30,"20–30"],[30,35,"30–35"],[35,40,"35–40"],[40,45,"40–45"],[45,50,"45–50"],[50,55,"50–55"],[55,Infinity,"≥55"]],
+
+  assumptions: {
+    zh:"类型混合：躺平者（滑块，选 0–15 认罚省成本）、随机玩家（滑块）、其余为“爬升者”——首轮从 30–60 出发，此后向 min(上轮中位数+2..8, x̄=√(L·K)) 追赶并带 ±3 抖动，复现 pilot 中“中位数逐轮冲高”的 rat-race 形态。组构成按 site2/site3 场次计划：低罚金组别 1/3 被试在 5 人组（其余 15 人组），高罚金 1/4；按被试数加权合并。E=100、K=200 与 params.py 一致，改参数需同步此文件。支付含出场费，belief 场次不额外付费。这是规划用数字——首场 pilot 后请用真实选择分布重校准躺平者/随机比例。",
+    en:"Type mixture: quitters (slider; pick 0–15, accept the penalty to save cost), noise players (slider), and “climbers” — start at 30–60, then chase min(previous median + 2..8, x̄=√(L·K)) with ±3 jitter, reproducing the rat-race pattern of rising medians seen in pilots. Group composition follows the site2/site3 session plan: in low-penalty cells 1/3 of participants sit in groups of 5 (rest in 15s), in high-penalty cells 1/4; pooled by headcount. E=100, K=200 mirror params.py — keep in sync. Pay includes the show-up fee; belief elicitation is unpaid. Planning numbers — recalibrate the type shares against real choice data after the first pilot.",
+  },
+};
+/* ╚═══════════════════════ END PROJECT-SPECIFIC ═══════════════════════╝ */
+
+/* ---------------- generic engine（通用，勿按项目修改）---------------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const qt=(v,p)=>v[Math.min(v.length-1,Math.floor(p*v.length))];
+const mean=v=>{let s=0;for(const x of v)s+=x;return s/v.length;};
+/* ---------------- end generic engine ---------------- */
+
+const SHELL = {
+  zh: { qtitle:"支付分位数表（每人）", htitle:"支付分布 — 分桶占比",
+        kBlend:"混合均值 / 人", kBudget:n=>`总预算（${n} 人）`, kBound:"解析上界 / 人",
+        kSimMax:"模拟最大单笔", luckiest:n=>`${n.toLocaleString("zh-CN")} 人中最幸运者`,
+        npeople:"总人数", blimit:"预算警戒线",
+        withinBudget:"✓ 预算内", overBudget:x=>`⚠ 超警戒线 ${x}`,
+        contained:"✓ 可控", high:"△ 偏高", excessive:"⚠ 过高",
+        cell:"组别", median:"中位", mean:"均值", max:"最大",
+        tip:(name,pct,b,cur)=>`${name}：${pct}% 的人落在 ${b}${cur}`,
+        langbtn:"EN", locale:"zh-CN" },
+  en: { qtitle:"Payment quantiles (per person)", htitle:"Payment distribution — bucket shares",
+        kBlend:"Blended mean / person", kBudget:n=>`Total budget (${n} ppl)`, kBound:"Analytic bound / person",
+        kSimMax:"Simulated max payment", luckiest:n=>`luckiest of ${n.toLocaleString("en-US")}`,
+        npeople:"Participants", blimit:"Budget alert line",
+        withinBudget:"✓ within budget", overBudget:x=>`⚠ over alert line by ${x}`,
+        contained:"✓ contained", high:"△ high", excessive:"⚠ excessive",
+        cell:"Cell", median:"median", mean:"Mean", max:"Max",
+        tip:(name,pct,b,cur)=>`${name}: ${pct}% of participants land in ${b}${cur}`,
+        langbtn:"中文", locale:"en-US" },
+};
+let LANG = localStorage.getItem("bc-lang") || "zh";
+if(!SHELL[LANG]) LANG="zh";
+const S=()=>SHELL[LANG];
+const MDL=window.MODEL;
+const fmt=(x,d=1)=>x.toLocaleString(S().locale,{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtBig = MDL.fmtBig ? x=>MDL.fmtBig(x,fmt,LANG)
+  : x=>LANG==="zh" ? (x>=1e6?fmt(x/1e4,0)+" 万":x>=1e5?fmt(x/1e4,1)+" 万":fmt(x,0))
+                   : (x>=1e3?x.toLocaleString("en-US",{maximumFractionDigits:0}):fmt(x,0));
+const CUR=()=> (MDL.currency&&MDL.currency[LANG])||"";
+const money=x=>MDL.currency&&MDL.currency.prefix ? CUR()+fmtBig(x) : fmtBig(x)+CUR();
+const DEFAULT_BUCKETS=[[0,20,"<20"],[20,50,"20–50"],[50,100,"50–100"],[100,200,"100–200"],[200,500,"200–500"],[500,Infinity,"≥500"]];
+
+function buildControls(){
+  const c=document.getElementById("controls");
+  c.innerHTML=MDL.params.map(pr=>`
+    <div class="ctl">
+      <label><span data-plabel="${pr.id}"></span><b id="v_${pr.id}"></b></label>
+      <input type="range" id="${pr.id}" min="${pr.min}" max="${pr.max}" step="${pr.step}" value="${pr.value}">
+    </div>`).join("");
+  const n=document.getElementById("numrow");
+  n.innerHTML=MDL.numbers.map(nm=>`
+    <label><span data-nlabel="${nm.id}"></span><input type="number" id="${nm.id}" value="${nm.value}" step="${nm.step}" min="${nm.min??0}"></label>`).join("")+
+    `<label><span id="l_npeople"></span><input type="number" id="npeople" value="${(MDL.people||{}).value??100}" step="${(MDL.people||{}).step??1}" min="1"></label>
+     <label><span id="l_blimit"></span><input type="number" id="blimit" value="${(MDL.alert||{}).value??10000}" step="${(MDL.alert||{}).step??100}" min="0"></label>`;
+  for(const pr of MDL.params) document.getElementById(pr.id).addEventListener("input",schedule);
+  for(const nm of MDL.numbers) document.getElementById(nm.id).addEventListener("input",schedule);
+  document.getElementById("npeople").addEventListener("input",schedule);
+  document.getElementById("blimit").addEventListener("input",schedule);
+}
+
+function applyStatic(){
+  document.documentElement.lang=S().locale;
+  document.title=MDL.title[LANG];
+  document.getElementById("t_h1").textContent=MDL.title[LANG];
+  document.getElementById("t_sub").textContent=MDL.subtitle[LANG];
+  document.getElementById("t_qtitle").textContent=S().qtitle;
+  document.getElementById("t_htitle").textContent=S().htitle;
+  document.getElementById("t_sum").textContent=(MDL.assumptionsTitle&&MDL.assumptionsTitle[LANG])||(LANG==="zh"?"行为模型假设（规划用，pilot 后应重新校准）":"Behavioral model assumptions (planning use; recalibrate after the pilot)");
+  document.getElementById("t_sumbody").innerHTML=MDL.assumptions?MDL.assumptions[LANG]:"";
+  document.getElementById("langbtn").textContent=S().langbtn;
+  for(const el of document.querySelectorAll("[data-plabel]"))
+    el.textContent=MDL.params.find(p=>p.id===el.dataset.plabel).label[LANG];
+  for(const el of document.querySelectorAll("[data-nlabel]"))
+    el.textContent=MDL.numbers.find(n=>n.id===el.dataset.nlabel).label[LANG];
+  document.getElementById("l_npeople").textContent=S().npeople;
+  document.getElementById("l_blimit").textContent=S().blimit;
+}
+
+function params(){
+  const p={};
+  for(const pr of MDL.params) p[pr.id]=+document.getElementById(pr.id).value;
+  for(const nm of MDL.numbers) p[nm.id]=+document.getElementById(nm.id).value;
+  p.npeople=+document.getElementById("npeople").value;
+  p.blimit=+document.getElementById("blimit").value;
+  if(MDL.clampParams){
+    const els={}; for(const pr of MDL.params) els[pr.id]=document.getElementById(pr.id);
+    MDL.clampParams(p,els);
+  }
+  return p;
+}
+
+function render(){
+  const p=params();
+  const sim=MDL.simulate(p,mulberry32);
+  const cells=MDL.cells.map(c=>{
+    const arr=Array.from(sim.cells[c.key]); arr.sort((a,b)=>a-b);
+    return {...c, v:arr, mean:mean(arr)};
+  });
+  for(const pr of MDL.params)
+    document.getElementById("v_"+pr.id).textContent=pr.show?pr.show(p[pr.id],LANG):p[pr.id];
+
+  const blended=cells.reduce((s,c)=>s+c.mean,0)/cells.length;
+  const budget=p.npeople*blended;
+  const simMax=Math.max(...cells.map(c=>c.v[c.v.length-1]));
+  const bound=MDL.bound?MDL.bound(p):null;
+  const totalSim=cells.reduce((s,c)=>s+c.v.length,0);
+
+  const budgetBadge=budget<=p.blimit
+    ? `<span class="badge good">${S().withinBudget}</span>`
+    : `<span class="badge serious">${S().overBudget(money(budget-p.blimit))}</span>`;
+  let boundBadge="";
+  if(bound!=null&&MDL.boundThresholds){
+    const [g,w]=MDL.boundThresholds;
+    boundBadge=bound<=g?`<span class="badge good">${S().contained}</span>`
+      :bound<=w?`<span class="badge warning">${S().high}</span>`
+      :`<span class="badge serious">${S().excessive}</span>`;
+  }
+  const ctx={fmt,fmtBig,money,lang:LANG};
+  const extraTiles=(MDL.tiles?MDL.tiles(p,sim,ctx):[]).map(t=>`
+    <div class="tile"><div class="k">${t.k[LANG]||t.k}</div><div class="v">${t.v}</div>${t.d?`<div class="d">${t.d[LANG]||t.d}</div>`:""}</div>`).join("");
+
+  document.getElementById("kpis").innerHTML=`
+    <div class="tile"><div class="k">${S().kBlend}</div><div class="v">${money(blended)}</div>
+      <div class="d">${cells.map(c=>`${c.label} ${fmt(c.mean)}`).join(" · ")}</div></div>
+    <div class="tile"><div class="k">${S().kBudget(p.npeople)}</div><div class="v">${money(budget)}</div>${budgetBadge}</div>
+    ${bound!=null?`<div class="tile"><div class="k">${S().kBound}</div><div class="v">${money(bound)}</div>${boundBadge}</div>`:""}
+    <div class="tile"><div class="k">${S().kSimMax}</div><div class="v">${money(simMax)}</div><div class="d">${S().luckiest(totalSim)}</div></div>
+    ${extraTiles}`;
+
+  const cols=[["p10",.10],["p25",.25],[S().median,.50],["p75",.75],["p90",.90],["p95",.95],["p99",.99]];
+  let th=`<thead><tr><th>${S().cell}</th>${cols.map(c=>`<th>${c[0]}</th>`).join("")}<th>${S().mean}</th><th>${S().max}</th></tr></thead>`;
+  const rows=cells.map(c=>`<tr><td><span class="dot" style="background:var(--series-${c.color})"></span>${c.label}</td>${
+    cols.map(cc=>`<td>${fmt(qt(c.v,cc[1]))}</td>`).join("")}<td>${fmt(c.mean)}</td><td>${fmtBig(c.v[c.v.length-1])}</td></tr>`).join("");
+  document.getElementById("qtable").innerHTML=th+`<tbody>${rows}</tbody>`;
+
+  const buckets=MDL.buckets||DEFAULT_BUCKETS;
+  const shares=cells.map(c=>{
+    const cnt=new Array(buckets.length).fill(0);
+    for(const x of c.v){for(let b=0;b<buckets.length;b++){if(x>=buckets[b][0]&&x<buckets[b][1]){cnt[b]++;break;}}}
+    return cnt.map(x=>100*x/c.v.length);
+  });
+  const maxShare=Math.max(1,...shares.flat());
+  let h=`<div class="legend">${cells.map(c=>`<span><span class="dot" style="background:var(--series-${c.color})"></span>${c.label}</span>`).join("")}</div>`;
+  for(let b=0;b<buckets.length;b++){
+    if(shares.every(s=>s[b]<0.05))continue;
+    h+=`<div class="hrow"><div class="hlab">${buckets[b][2]}${CUR()}</div><div class="bars">${
+      cells.map((c,i)=>`<div class="bar" style="background:var(--series-${c.color});width:${Math.max(0.4,72*shares[i][b]/maxShare)}%" data-tip="${S().tip(c.label,shares[i][b].toFixed(1),buckets[b][2],CUR())}"><span>${shares[i][b].toFixed(0)}%</span></div>`).join("")
+    }</div></div>`;
+  }
+  document.getElementById("hist").innerHTML=h;
+
+  const theo=MDL.theory?MDL.theory(p,ctx):null;
+  document.getElementById("theory").innerHTML=theo?(theo[LANG]||theo):"";
+}
+
+let pend=null;
+function schedule(){ if(pend)return; pend=setTimeout(()=>{pend=null;render();},60); }
+
+document.getElementById("langbtn").addEventListener("click",()=>{
+  LANG=LANG==="zh"?"en":"zh";
+  localStorage.setItem("bc-lang",LANG);
+  applyStatic(); render();
+});
+const tip=document.getElementById("tip");
+document.addEventListener("mousemove",e=>{
+  const t=e.target.closest("[data-tip]");
+  if(t){tip.style.display="block";tip.textContent=t.dataset.tip;
+    tip.style.left=Math.min(window.innerWidth-260,e.clientX+14)+"px";tip.style.top=(e.clientY+14)+"px";}
+  else tip.style.display="none";
+});
+
+buildControls();
+applyStatic();
+render();
+</script>
+</body>
+</html>

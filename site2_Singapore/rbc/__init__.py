@@ -43,9 +43,12 @@ def creating_session(subsession: Subsession):
                 f"but the session was created with {len(players)}."
             )
 
+        # One common paid round for the whole session (announced at the end),
+        # so every participant is paid for the same randomly drawn round.
         paid_round_max = session_num_rounds(subsession)
+        common_paid_round = random.randint(1, paid_round_max)
         for p in players:
-            p.participant.paid_round = random.randint(1, paid_round_max)
+            p.participant.paid_round = common_paid_round
 
 
 def group_by_arrival_time_method(subsession: Subsession, waiting_players):

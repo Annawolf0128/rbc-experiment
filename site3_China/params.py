@@ -25,5 +25,5 @@ GROUP_SIZE_LARGE  = 15    # n   a large-arm session contains exactly 1 group of 
 # ============================================================
 # Payment parameters
 # ============================================================
-SHOW_UP_FEE         = 5.00    # USD paid to every participant who completes (regardless of choices)
-CURRENCY_PER_POINT  = 0.50    # USD per 1 oTree point (so 1 point = $0.50)
+SHOW_UP_FEE         = 15.00   # RMB (CNY) paid to every participant who completes (regardless of choices)
+CURRENCY_PER_POINT  = 0.50    # RMB per 1 oTree point (so 1 point = ¥0.50)
