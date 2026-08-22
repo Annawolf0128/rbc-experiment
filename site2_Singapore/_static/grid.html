@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>oTree 多被试网格测试台</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang SC", sans-serif; background: #1e1e24; color: #eee; }
+  #toolbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 10px 14px; background: #2a2a33; border-bottom: 1px solid #444;
+  }
+  #toolbar label { font-size: 13px; color: #bbb; }
+  select, input[type=number], input[type=text] {
+    background: #1e1e24; color: #eee; border: 1px solid #555; border-radius: 4px; padding: 4px 6px; font-size: 13px;
+    max-width: 340px;
+  }
+  input[type=number] { width: 56px; }
+  button {
+    background: #4a7cff; color: #fff; border: 0; border-radius: 4px;
+    padding: 6px 12px; font-size: 13px; cursor: pointer;
+  }
+  button.secondary { background: #555; }
+  button:hover { filter: brightness(1.1); }
+  #status { font-size: 13px; color: #9fd49f; }
+  #grid {
+    display: grid; gap: 6px; padding: 6px;
+    grid-template-columns: repeat(var(--cols, 5), 1fr);
+  }
+  .tile { background: #111; border: 1px solid #444; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+  .tile.tile-error { border-color: #e5484d; box-shadow: 0 0 0 1px #e5484d; }
+  .tile.tile-done { border-color: #2e9e5b; }
+  .tile-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 8px; background: #33333d; font-size: 12px; color: #ccc; white-space: nowrap;
+  }
+  .tile-header .pname { font-weight: 600; color: #fff; }
+  .tile-header .pagename { color: #8ab4ff; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  .tile-header a { color: #8ab4ff; text-decoration: none; font-size: 11px; }
+  .tile-header button { padding: 1px 7px; font-size: 11px; background: #555; }
+  .frame-wrap { position: relative; overflow: hidden; height: var(--tileH, 420px); background: #fff; }
+  .frame-wrap iframe {
+    border: 0;
+    width: calc(100% / var(--zoom, 0.6));
+    height: calc(100% / var(--zoom, 0.6));
+    transform: scale(var(--zoom, 0.6));
+    transform-origin: 0 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <label>场次配置 <select id="cfg"><option>加载中…</option></select></label>
+  <label>人数 <input type="number" id="npart" value="15" min="1" max="60"></label>
+  <button id="create">新建场次并平铺</button>
+  <label>或已有场次代码 <input type="text" id="code" placeholder="如 j5xkzmxq" size="9"></label>
+  <button id="attach" class="secondary">载入</button>
+  <span style="flex:1"></span>
+  <label>列数 <input type="number" id="cols" value="5" min="1" max="10"></label>
+  <label>缩放 <input type="range" id="zoom" min="0.3" max="1" step="0.05" value="0.6"></label>
+  <label>高度 <input type="range" id="tileH" min="200" max="800" step="20" value="420"></label>
+  <button id="reloadAll" class="secondary">全部刷新</button>
+  <label>策略
+    <select id="strategy">
+      <option value="random" selected>随机 (0–100 均匀)</option>
+      <option value="equilibrium">均衡值 √(L·k)</option>
+      <option value="herd">跟风 (上轮中位数±3)</option>
+      <option value="lowball">压低 (0–15)</option>
+      <option value="mixed">混合 (各格轮流分配)</option>
+    </select>
+  </label>
+  <label>速度 <input type="range" id="speed" min="0.5" max="15" step="0.5" value="1.5" style="width:90px">
+    <span id="speedVal" style="color:#eee">1.5s/步</span></label>
+  <button id="autoToggle" style="background:#2e9e5b">▶ 自动推进</button>
+  <a id="monitorLink" href="#" target="_blank" style="color:#8ab4ff;font-size:13px;display:none">打开 Monitor</a>
+  <span id="status"></span>
+</div>
+
+<div id="grid"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+
+function applyLayout() {
+  root.style.setProperty('--cols', $('cols').value);
+  root.style.setProperty('--zoom', $('zoom').value);
+  root.style.setProperty('--tileH', $('tileH').value + 'px');
+}
+['cols','zoom','tileH'].forEach(id => $(id).addEventListener('input', applyLayout));
+applyLayout();
+
+function setStatus(msg, err) {
+  $('status').textContent = msg;
+  $('status').style.color = err ? '#ff8a8a' : '#9fd49f';
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  if (!res.ok) throw new Error(path + ' → HTTP ' + res.status + ': ' + (await res.text()).slice(0, 200));
+  return res.json();
+}
+
+// ---- 从服务器动态读取 session configs（不硬编码，配置改了自动跟上）----
+async function loadConfigs() {
+  try {
+    const configs = await api('/api/session_configs');
+    const sel = $('cfg');
+    sel.innerHTML = '';
+    configs.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.name;
+      o.textContent = c.display_name || c.name;
+      o.dataset.n = c.num_demo_participants || 1;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => { $('npart').value = sel.selectedOptions[0].dataset.n; };
+    // 默认选中第一个正式配置（名字不含 test/preview 的），否则第一个
+    const official = [...sel.options].find(o => !/test|preview/i.test(o.value));
+    if (official) sel.value = official.value;
+    sel.onchange();
+  } catch (e) { setStatus('读取配置失败: ' + e.message, true); }
+}
+loadConfigs();
+
+let sessionConfig = {};   // 保存当前场次 config（penalty 等），供策略计算用
+
+function buildGrid(session) {
+  sessionConfig = session.config || {};
+  const grid = $('grid');
+  grid.innerHTML = '';
+  session.participants.forEach(p => {
+    const url = '/InitializeParticipant/' + p.code;
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.innerHTML = `
+      <div class="tile-header">
+        <span class="pname">P${p.id_in_session}</span>
+        <span class="pagename"></span>
+        <a href="${url}" target="_blank">新标签</a>
+        <label style="font-size:11px;color:#9fd49f"><input type="checkbox" class="auto-cb" checked> 自动</label>
+        <button>刷新</button>
+      </div>
+      <div class="frame-wrap"><iframe src="${url}"></iframe></div>`;
+    tile.querySelector('button').onclick = () => {
+      const f = tile.querySelector('iframe');
+      f.src = f.src;   // oTree 服务端会重定向回被试当前页
+    };
+    grid.appendChild(tile);
+  });
+  $('monitorLink').href = '/SessionMonitor/' + session.code;
+  $('monitorLink').style.display = 'inline';
+  $('code').value = session.code;
+  setStatus(`场次 ${session.code}：${session.participants.length} 名被试已平铺`);
+  if (!pageWatcher) pageWatcher = setInterval(updateTileLabels, 2000);
+}
+
+$('create').onclick = async () => {
+  try {
+    setStatus('创建场次中…');
+    const created = await api('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_config_name: $('cfg').value,
+        num_participants: parseInt($('npart').value, 10),
+      }),
+    });
+    buildGrid(await api('/api/sessions/' + created.code));
+  } catch (e) { setStatus(e.message, true); }
+};
+
+$('attach').onclick = async () => {
+  try {
+    const code = $('code').value.trim();
+    if (!code) return setStatus('请输入场次代码', true);
+    buildGrid(await api('/api/sessions/' + code));
+  } catch (e) { setStatus(e.message, true); }
+};
+
+$('reloadAll').onclick = () => {
+  document.querySelectorAll('#grid iframe').forEach(f => { f.src = f.src; });
+};
+
+// ---- 每格状态标签：当前页面名 + 出错红框 / 完成绿框 ----
+let pageWatcher = null;
+function updateTileLabels() {
+  document.querySelectorAll('#grid .tile').forEach(tile => {
+    let doc;
+    try { doc = tile.querySelector('iframe').contentDocument; } catch (e) { return; }
+    if (!doc) return;
+    const t = doc.getElementById('_otree-title');
+    const label = tile.querySelector('.pagename');
+    const hasFormError = doc.querySelector('.otree-form-errors, .invalid-feedback, .has-errors');
+    const isServerError = /Application error|Traceback|Server Error/i.test(doc.title || '');
+    if (t) label.textContent = t.textContent.trim();
+    else if (doc.body && /wait/i.test(doc.body.textContent || '')) label.textContent = '(等待页)';
+    tile.classList.toggle('tile-error', !!(hasFormError || isServerError));
+    tile.classList.toggle('tile-done', !!t && /complete|payment|thank|结束|完成|感谢/i.test(t.textContent));
+  });
+}
+
+// ===================== 自动推进 =====================
+// ┌──────────────── 项目定制区（PROJECT-SPECIFIC）────────────────┐
+// 安装到具体 oTree 项目时按需修改这一块；其余代码是通用的。
+//
+// KNOWN_ANSWERS：服务端校验必须答对的字段（理解题等），
+//   key = 表单字段 name，value = 正确选项的 value。
+//   从该项目 __init__.py 的 error_message / 校验逻辑里抄。
+//   没列出的单选/下拉会随机选（答错会被退回并换随机值重试）。
+window.KNOWN_ANSWERS = {
+  // —— RBC 项目（rbc/__init__.py Quiz.error_message）——
+  quiz_below_median: 'yes',
+  quiz_match_median: 'no_penalty',
+  quiz_cost: 'quadratic',
+  quiz_equal_earnings: 'no_penalty_formula',
+  quiz_below_earnings: 'penalty_formula',
+  quiz_fixed_penalty: 'fixed',
+};
+// STRATEGY_PARAMS：策略下拉里"均衡值"的算法参数（RBC: x̄=√(L·K)）。
+//   其他实验若无对应概念，均衡/跟风策略会自动退化为随机。
+window.STRATEGY_PARAMS = { K: 200 };   // RBC params.py COST_DIVISOR
+// └───────────────────────────────────────────────────────────────┘
+const QUIZ_ANSWERS = window.KNOWN_ANSWERS;
+const rand = n => Math.floor(Math.random() * n);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Math.round(v)));
+
+// ---- 机器人策略：决定 Choice 滑块（和 belief 预测）的取值 ----
+const STRATEGIES = ['random', 'equilibrium', 'herd', 'lowball'];
+function pickX(tile, lo, hi) {
+  let strat = $('strategy').value;
+  if (strat === 'mixed') {
+    const idx = [...tile.parentNode.children].indexOf(tile);
+    strat = STRATEGIES[idx % STRATEGIES.length];
+  }
+  const L = sessionConfig.penalty;                // RBC：场次 config 里的罚金
+  const K = (window.STRATEGY_PARAMS || {}).K;
+  const lastMedian = parseFloat(tile.dataset.lastMedian);
+  switch (strat) {
+    case 'equilibrium':
+      // 无对应参数的项目自动退化为随机
+      if (L == null || K == null) return lo + rand(hi - lo + 1);
+      return clamp(Math.sqrt(L * K), lo, hi);
+    case 'herd':        return isNaN(lastMedian) ? lo + rand(hi - lo + 1)
+                               : clamp(lastMedian - 3 + rand(7), lo, hi);
+    case 'lowball':     return clamp(rand(16), lo, hi);
+    default:            return lo + rand(hi - lo + 1);
+  }
+}
+
+// 对单个格子的当前页面填表 + 提交；返回 true 表示这一步提交了
+function autoStep(tile) {
+  const iframe = tile.querySelector('iframe');
+  let doc;
+  try { doc = iframe.contentDocument; } catch (e) { return false; }
+  if (!doc || doc.readyState !== 'complete') return false;
+  if (doc.__autoSubmitted) return false;          // 本页已提交，等下一页加载
+
+  // Results 页：先记下本轮中位数（herd 策略下一轮要用）
+  const titleEl = doc.getElementById('_otree-title');
+  if (titleEl && /result|结果/i.test(titleEl.textContent)) {
+    const h3 = doc.querySelector('h3');
+    if (h3 && !isNaN(parseFloat(h3.textContent))) tile.dataset.lastMedian = parseFloat(h3.textContent);
+  }
+
+  const form = doc.getElementById('form');
+  if (!form) return false;                        // 等待页 / 无表单页，oTree 自己会推进
+
+  // --- Choice 页：滑块 + 隐藏字段，必须触发 input 事件解锁提交按钮 ---
+  doc.querySelectorAll('input[type=range]').forEach(slider => {
+    slider.value = pickX(tile, +slider.min || 0, +slider.max || 100);
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    slider.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  // --- 单选：已知 Quiz 用正确答案，其他随机 ---
+  const radioGroups = {};
+  form.querySelectorAll('input[type=radio]').forEach(r => {
+    (radioGroups[r.name] = radioGroups[r.name] || []).push(r);
+  });
+  for (const [name, radios] of Object.entries(radioGroups)) {
+    const correct = QUIZ_ANSWERS[name];
+    const pick = (correct && radios.find(r => r.value === correct)) || radios[rand(radios.length)];
+    if (pick) { pick.checked = true; pick.dispatchEvent(new Event('change', { bubbles: true })); }
+  }
+
+  // --- 下拉：随机选一个非空选项 ---
+  form.querySelectorAll('select').forEach(sel => {
+    const opts = [...sel.options].filter(o => o.value !== '');
+    if (opts.length) { sel.value = opts[rand(opts.length)].value; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  });
+
+  // --- 数字输入：belief 预测跟随策略取值，其他在 min/max 内随机 ---
+  form.querySelectorAll('input[type=number]').forEach(inp => {
+    const min = inp.min !== '' ? +inp.min : 0;
+    const max = inp.max !== '' ? +inp.max : 100;
+    inp.value = /belief/i.test(inp.name || '') ? pickX(tile, min, max) : min + rand(max - min + 1);
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  // --- 勾选框（consent）、文本、文本域 ---
+  form.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = true; });
+  form.querySelectorAll('input[type=text]').forEach(inp => { if (!inp.value) inp.value = 'auto test'; });
+  form.querySelectorAll('textarea').forEach(ta => { if (!ta.value) ta.value = 'auto test'; });
+
+  // --- 提交 ---
+  const btn = form.querySelector('.otree-btn-next, button[type=submit], input[type=submit]');
+  if (btn && !btn.disabled) {
+    doc.__autoSubmitted = true;   // 新页面加载后 doc 会换掉，标记自动失效
+    btn.click();
+    return true;
+  }
+  // 无按钮页（如 Welcome，正式场次由实验员在 Monitor 放行）：测试时直接提交表单绕过
+  const title = doc.getElementById('_otree-title');
+  if (!btn && title && /welcome|欢迎/i.test(title.textContent)) {
+    doc.__autoSubmitted = true;
+    form.submit();
+    return true;
+  }
+  return false;
+}
+
+// ---- 速度控制：每步间隔（秒），拖动立即生效 ----
+const speedMs = () => parseFloat($('speed').value) * 1000;
+$('speed').addEventListener('input', () => {
+  $('speedVal').textContent = $('speed').value + 's/步';
+});
+
+let autoTimer = null;
+function autoTick() {
+  document.querySelectorAll('#grid .tile').forEach(tile => {
+    if (!tile.querySelector('.auto-cb').checked) return;
+    // 每个 tile 在半个间隔内随机错峰，模拟被试有快有慢
+    setTimeout(() => autoStep(tile), rand(speedMs() / 2));
+  });
+}
+function scheduleNext() {
+  autoTimer = setTimeout(() => { autoTick(); scheduleNext(); }, speedMs());
+}
+
+$('autoToggle').onclick = () => {
+  if (autoTimer) {
+    clearTimeout(autoTimer); autoTimer = null;
+    $('autoToggle').textContent = '▶ 自动推进';
+    $('autoToggle').style.background = '#2e9e5b';
+    setStatus('自动推进已暂停');
+  } else {
+    $('autoToggle').textContent = '⏸ 暂停自动';
+    $('autoToggle').style.background = '#c96a2e';
+    setStatus('自动推进中…（取消某格的"自动"勾选即可手动控制它）');
+    autoTick();
+    scheduleNext();
+  }
+};
+</script>
+</body>
+</html>

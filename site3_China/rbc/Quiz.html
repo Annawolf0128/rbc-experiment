@@ -1,0 +1,71 @@
+{{ block title }}理解测试{{ endblock }}
+
+{{ block content }}
+<div class="card mb-3">
+  <div class="card-body">
+    <p>请回答以下问题。</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    {{ formfield 'quiz_match_median' }}
+
+    <div class="mb-3">
+      <p>
+        假设你的数字是 x，小组中位数是 y，且 x = y，罚金 = {{ L }}。
+        你本轮的收益是多少？
+      </p>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_equal_earnings" id="quiz_equal_earnings_no_penalty" value="no_penalty_formula" required>
+        <label class="form-check-label" for="quiz_equal_earnings_no_penalty">100 − x²/200</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_equal_earnings" id="quiz_equal_earnings_penalty" value="penalty_formula">
+        <label class="form-check-label" for="quiz_equal_earnings_penalty">100 − x²/200 − {{ L }}</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_equal_earnings" id="quiz_equal_earnings_linear" value="linear_formula">
+        <label class="form-check-label" for="quiz_equal_earnings_linear">100 − x − {{ L }}</label>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <p>
+        假设你的数字是 x，小组中位数是 y，且 x &lt; y，罚金 = {{ L }}。
+        你本轮的收益是多少？
+      </p>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_below_earnings" id="quiz_below_earnings_no_penalty" value="no_penalty_formula" required>
+        <label class="form-check-label" for="quiz_below_earnings_no_penalty">100 − x²/200</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_below_earnings" id="quiz_below_earnings_penalty" value="penalty_formula">
+        <label class="form-check-label" for="quiz_below_earnings_penalty">100 − x²/200 − {{ L }}</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_below_earnings" id="quiz_below_earnings_linear" value="linear_formula">
+        <label class="form-check-label" for="quiz_below_earnings_linear">100 − x − {{ L }}</label>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <p>如果 x &lt; y，罚金是否取决于 x 比 y 低多少？</p>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_fixed_penalty" id="quiz_fixed_penalty_fixed" value="fixed" required>
+        <label class="form-check-label" for="quiz_fixed_penalty_fixed">罚金是相同的固定金额 {{ L }}。</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_fixed_penalty" id="quiz_fixed_penalty_distance" value="distance">
+        <label class="form-check-label" for="quiz_fixed_penalty_distance">x 比 y 低得越多，罚金越大。</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="quiz_fixed_penalty" id="quiz_fixed_penalty_half" value="half">
+        <label class="form-check-label" for="quiz_fixed_penalty_half">罚金是 {{ L }} 的一半。</label>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ next_button }}
+{{ endblock }}
