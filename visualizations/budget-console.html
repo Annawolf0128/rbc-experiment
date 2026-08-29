@@ -91,6 +91,8 @@
   <div class="kpis" id="kpis"></div>
   <h2 id="t_qtitle"></h2>
   <div class="tablewrap"><table id="qtable"></table></div>
+  <h2 id="t_dtitle" style="display:none"></h2>
+  <div class="tablewrap" id="designwrap" style="display:none"><table id="dtable"></table></div>
   <h2 id="t_htitle"></h2>
   <div class="hist" id="hist"></div>
   <div class="theory" id="theory"></div>
@@ -105,14 +107,14 @@
 window.MODEL = {
   title: { zh: "RBC 实验预算控制台", en: "RBC Budget Console" },
   subtitle: {
-    zh: "反向选美 · 每人支付 = 出场费 + 随机抽 1 轮收益 × 兑换率 · 单轮收益 = 100 − x²/200 − L·1{x<组中位数} · 行为模拟 30,000 人/组（固定种子）· 金额为美元",
-    en: "Reversed Beauty Contest · pay = show-up fee + one random round × rate · round payoff = 100 − x²/200 − L·1{x<median} · 30,000 simulated participants per cell (fixed seed) · USD",
+    zh: "反向选美 · 每人支付 = 出场费 + 随机抽 1 轮收益 × 兑换率 · 单轮收益 = 100 − x²/200 − L·1{x<组中位数} · 行为模拟 30,000 人/组（固定种子）· 金额为人民币",
+    en: "Reversed Beauty Contest · pay = show-up fee + one random round × rate · round payoff = 100 − x²/200 − L·1{x<median} · 30,000 simulated participants per cell (fixed seed) · RMB (CNY)",
   },
-  currency: { zh: "$", en: "$", prefix: true },
+  currency: { zh: "¥", en: "¥", prefix: true },
   fmtBig: (x, fmt) => x >= 1e3 ? x.toLocaleString("en-US", { maximumFractionDigits: 0 }) : fmt(x, 1),
   params: [
-    { id:"rate", label:{zh:"兑换率（$/点）",en:"Exchange rate ($/pt)"}, min:0.10, max:1.00, step:0.05, value:0.50,
-      show:v=>"$"+v.toFixed(2) },
+    { id:"rate", label:{zh:"兑换率（¥/点）",en:"Exchange rate (¥/pt)"}, min:0.10, max:1.00, step:0.05, value:0.50,
+      show:v=>"¥"+v.toFixed(2) },
     { id:"T", label:{zh:"轮数 T",en:"Rounds T"}, min:5, max:30, step:1, value:20,
       show:(v,lang)=>v+(lang==="zh"?" 轮":"") },
     { id:"Llow", label:{zh:"低罚金 L",en:"Low penalty L"}, min:5, max:50, step:5, value:20,
@@ -125,10 +127,10 @@ window.MODEL = {
       show:v=>(100*v).toFixed(0)+"%" },
   ],
   numbers: [
-    { id:"fee", label:{zh:"出场费（$）",en:"Show-up fee ($)"}, value:5, step:0.5, min:0 },
+    { id:"fee", label:{zh:"出场费（¥）",en:"Show-up fee (¥)"}, value:15, step:0.5, min:0 },
   ],
   people: { value:150, step:15 },          // site2 计划：10 场 × 15 人
-  alert:  { value:8500, step:500 },
+  alert:  { value:10000, step:500 },
   cells: [ { key:"low", label:"low L", color:1 }, { key:"high", label:"high L", color:2 } ],
   clampParams(p, els){ if(p.Lhigh<p.Llow){ p.Lhigh=p.Llow; if(els&&els.Lhigh) els.Lhigh.value=p.Lhigh; } return p; },
 
@@ -191,8 +193,8 @@ window.MODEL = {
     return [
       { k:{zh:"按场次计划加权预算",en:"Design-weighted budget"},
         v:ctx.money(weighted),
-        d:{zh:`低罚金 60% × $${mLow.toFixed(2)} + 高罚金 40% × $${mHigh.toFixed(2)}`,
-           en:`60% low × $${mLow.toFixed(2)} + 40% high × $${mHigh.toFixed(2)}`} },
+        d:{zh:`低罚金 60% × ¥${mLow.toFixed(2)} + 高罚金 40% × ¥${mHigh.toFixed(2)}`,
+           en:`60% low × ¥${mLow.toFixed(2)} + 40% high × ¥${mHigh.toFixed(2)}`} },
       { k:{zh:"理论最低支付 / 人",en:"Theoretical min pay / person"},
         v:ctx.money(minPay),
         d:{zh:"x=99 且中位数=100 的极端组合；结构上不可能为负",
@@ -200,15 +202,44 @@ window.MODEL = {
     ];
   },
 
+  // 各 block 的场次数、样本量与预算；基准 = 单站点计划（10 场 × 15 人 = 150），随 Participants 等比缩放
+  design(p, sim, ctx){
+    const m=a=>{let t=0;for(const x of a)t+=x;return t/a.length;};
+    const mLow=m(sim.cells.low), mHigh=m(sim.cells.high);
+    const scale=p.npeople/150, zh=ctx.lang==="zh";
+    const BLOCKS=[   // [名称, 组构成, L, belief, 场次/站, 人数/站, 该 cell 模拟均值]
+      ["Small–Low",        "3 × 5",  p.Llow,  "—", 1, 15, mLow],
+      ["Small–High",       "3 × 5",  p.Lhigh, "—", 1, 15, mHigh],
+      ["Large–Low",        "1 × 15", p.Llow,  "—", 3, 45, mLow],
+      ["Large–High",       "1 × 15", p.Lhigh, "—", 3, 45, mHigh],
+      ["Small–Low–Belief", "3 × 5",  p.Llow,  "✓", 1, 15, mLow],
+      ["Large–Low–Belief", "1 × 15", p.Llow,  "✓", 1, 15, mLow],
+    ];
+    const f=x=>Number.isInteger(+x.toFixed(6))?Math.round(x):x.toFixed(1);
+    const rows=BLOCKS.map(([b,g,L,bel,ns,n,mean])=>
+      [b, g, L+" pt", bel, f(ns*scale), f(n*scale), ctx.money(n*scale*mean)]);
+    let S=0,N=0,B=0;
+    BLOCKS.forEach(([, , , , ns,n,mean])=>{ S+=ns*scale; N+=n*scale; B+=n*scale*mean; });
+    rows.push([`<b>${zh?"合计":"Total"}</b>`,"","","",`<b>${f(S)}</b>`,`<b>${f(N)}</b>`,`<b>${ctx.money(B)}</b>`]);
+    return {
+      title:{zh:`各 block 场次数 · 样本量 · 预算（基准 150 人/站 × ${f(scale)}）`,
+             en:`Per-block sessions, sample & budget (base plan 150/site × ${f(scale)})`},
+      head:[{zh:"条件 Block",en:"Block"},{zh:"组构成",en:"Groups"},{zh:"罚金",en:"Penalty"},
+            {zh:"Belief",en:"Belief"},{zh:"场次数",en:"Sessions"},{zh:"人数",en:"N"},
+            {zh:"预算（模拟均值 × 人数）",en:"Budget (sim mean × N)"}],
+      rows,
+    };
+  },
+
   theory(p, ctx){
     const xl=Math.sqrt(p.Llow*this.K), xh=Math.sqrt(p.Lhigh*this.K);
     const el=this.E-xl*xl/this.K, eh=this.E-xh*xh/this.K;
-    const zh=`均衡值 x̄=√(L·K)：低罚金 <b>${xl.toFixed(1)}</b>（均衡收益 ${el.toFixed(0)} 点 → $${(p.fee+p.rate*el).toFixed(2)}/人）｜ 高罚金 <b>${xh.toFixed(1)}</b>（${eh.toFixed(0)} 点 → $${(p.fee+p.rate*eh).toFixed(2)}/人）｜ 合作上限：全组选 0 → 人人 ${this.E} 点 → $${(p.fee+p.rate*this.E).toFixed(2)}/人`;
-    const en=`Equilibrium x̄=√(L·K): low <b>${xl.toFixed(1)}</b> (payoff ${el.toFixed(0)} pt → $${(p.fee+p.rate*el).toFixed(2)}/person) | high <b>${xh.toFixed(1)}</b> (${eh.toFixed(0)} pt → $${(p.fee+p.rate*eh).toFixed(2)}/person) | cooperative cap: all pick 0 → ${this.E} pt each → $${(p.fee+p.rate*this.E).toFixed(2)}/person`;
+    const zh=`均衡值 x̄=√(L·K)：低罚金 <b>${xl.toFixed(1)}</b>（均衡收益 ${el.toFixed(0)} 点 → ¥${(p.fee+p.rate*el).toFixed(2)}/人）｜ 高罚金 <b>${xh.toFixed(1)}</b>（${eh.toFixed(0)} 点 → ¥${(p.fee+p.rate*eh).toFixed(2)}/人）｜ 合作上限：全组选 0 → 人人 ${this.E} 点 → ¥${(p.fee+p.rate*this.E).toFixed(2)}/人`;
+    const en=`Equilibrium x̄=√(L·K): low <b>${xl.toFixed(1)}</b> (payoff ${el.toFixed(0)} pt → ¥${(p.fee+p.rate*el).toFixed(2)}/person) | high <b>${xh.toFixed(1)}</b> (${eh.toFixed(0)} pt → ¥${(p.fee+p.rate*eh).toFixed(2)}/person) | cooperative cap: all pick 0 → ${this.E} pt each → ¥${(p.fee+p.rate*this.E).toFixed(2)}/person`;
     return {zh, en};
   },
 
-  buckets: [[0,10,"<10"],[10,20,"10–20"],[20,30,"20–30"],[30,35,"30–35"],[35,40,"35–40"],[40,45,"40–45"],[45,50,"45–50"],[50,55,"50–55"],[55,Infinity,"≥55"]],
+  buckets: [[0,10,"<10"],[10,20,"10–20"],[20,30,"20–30"],[30,35,"30–35"],[35,40,"35–40"],[40,45,"40–45"],[45,50,"45–50"],[50,55,"50–55"],[55,58,"55–58"],[58,61,"58–61"],[61,64,"61–64"],[64,67,"64–67"],[67,70,"67–70"],[70,Infinity,"≥70"]],
 
   assumptions: {
     zh:"类型混合：躺平者（滑块，选 0–15 认罚省成本）、随机玩家（滑块）、其余为“爬升者”——首轮从 30–60 出发，此后向 min(上轮中位数+2..8, x̄=√(L·K)) 追赶并带 ±3 抖动，复现 pilot 中“中位数逐轮冲高”的 rat-race 形态。组构成按 site2/site3 场次计划：低罚金组别 1/3 被试在 5 人组（其余 15 人组），高罚金 1/4；按被试数加权合并。E=100、K=200 与 params.py 一致，改参数需同步此文件。支付含出场费，belief 场次不额外付费。这是规划用数字——首场 pilot 后请用真实选择分布重校准躺平者/随机比例。",
@@ -363,6 +394,17 @@ function render(){
     }</div></div>`;
   }
   document.getElementById("hist").innerHTML=h;
+
+  // 可选设计表：MODEL.design(p, sim, ctx) -> {title:{zh,en}, head:[{zh,en}|str], rows:[[cell…]]}
+  if(MDL.design){
+    const d=MDL.design(p,sim,ctx);
+    document.getElementById("t_dtitle").style.display="";
+    document.getElementById("designwrap").style.display="";
+    document.getElementById("t_dtitle").textContent=d.title[LANG]||d.title;
+    document.getElementById("dtable").innerHTML=
+      "<thead><tr>"+d.head.map(h=>`<th>${h[LANG]||h}</th>`).join("")+"</tr></thead>"+
+      "<tbody>"+d.rows.map(r=>"<tr>"+r.map(c=>`<td>${c}</td>`).join("")+"</tr>").join("")+"</tbody>";
+  }
 
   const theo=MDL.theory?MDL.theory(p,ctx):null;
   document.getElementById("theory").innerHTML=theo?(theo[LANG]||theo):"";

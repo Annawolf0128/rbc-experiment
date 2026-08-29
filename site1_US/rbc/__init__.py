@@ -77,7 +77,6 @@ class Player(BasePlayer):
     belief_median = models.IntegerField(
         min=0, max=100,
         label='What do you think the group median will be in this round?',
-        blank=True,
     )
     cost = models.FloatField(initial=0)
     penalty_paid = models.FloatField(initial=0)
@@ -143,6 +142,7 @@ class Player(BasePlayer):
         widget=widgets.RadioSelect,
     )
 
+
     survey_risk = models.IntegerField(
         choices=[(i, str(i)) for i in range(11)],
         min=0, max=10,
@@ -151,11 +151,9 @@ class Player(BasePlayer):
             "(0 = not at all willing, 10 = very willing)"
         ),
         widget=widgets.RadioSelectHorizontal,
-        blank=True,
     )
     survey_strategy = models.LongStringField(
-        label="Q2. How did you decide which number to choose each round?",
-        blank=True,
+        label="Q6. How did you decide which number to choose each round?",
     )
     survey_use_median = models.StringField(
         choices=[
@@ -164,9 +162,8 @@ class Player(BasePlayer):
             ('sometimes', 'Sometimes'),
             ('never', 'Never'),
         ],
-        label="Q3. Did you use the previous round's median to help you make your decisions?",
+        label="Q2. Did you use the previous round's median to help you make your decisions?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_median_importance = models.StringField(
         choices=[
@@ -175,9 +172,8 @@ class Player(BasePlayer):
             ('not_much', 'Not very important'),
             ('not_at_all', 'Not important at all'),
         ],
-        label="Q4. How important was the previous round's median in your decision-making?",
+        label="Q3. How important was the previous round's median in your decision-making?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_use_prior_medians = models.StringField(
         choices=[
@@ -186,9 +182,8 @@ class Player(BasePlayer):
             ('sometimes', 'Sometimes'),
             ('never', 'Never'),
         ],
-        label="Q5. Did you use the medians from the previous two or more rounds to help make your decisions?",
+        label="Q4. Did you use the medians from the previous two or more rounds to help make your decisions?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_prior_medians_importance = models.StringField(
         choices=[
@@ -197,9 +192,8 @@ class Player(BasePlayer):
             ('not_much', 'Not very important'),
             ('not_at_all', 'Not important at all'),
         ],
-        label="Q6. How important were the medians from the previous two or more rounds in your decision-making?",
+        label="Q5. How important were the medians from the previous two or more rounds in your decision-making?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_best = models.StringField(
         choices=[
@@ -210,7 +204,6 @@ class Player(BasePlayer):
         ],
         label="Q7. What do you think was the best outcome for the group in each round?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_best_other = models.StringField(
         label="If others, please specify:",
@@ -223,9 +216,8 @@ class Player(BasePlayer):
             ('nonbinary', 'Non-binary'),
             ('prefer_not', 'Prefer not to say'),
         ],
-        label="Q10. Gender",
+        label="Q10. Your gender",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_prior_bc = models.StringField(
         choices=[
@@ -235,7 +227,6 @@ class Player(BasePlayer):
         ],
         label="Q8. Have you participated in a Beauty Contest experiment before?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_game_theory = models.StringField(
         choices=[
@@ -245,12 +236,10 @@ class Player(BasePlayer):
         ],
         label="Q9. Have you studied game theory or experimental economics?",
         widget=widgets.RadioSelect,
-        blank=True,
     )
     survey_age = models.StringField(
         choices=[(str(a), str(a)) for a in range(17, 30)] + [('30+', '30 or above')],
         label="Q11. Age",
-        blank=True,
     )
 
 
@@ -344,6 +333,7 @@ class Quiz(Page):
     form_model = 'player'
     form_fields = [
         'quiz_match_median',
+        'quiz_cost',
         'quiz_equal_earnings',
         'quiz_below_earnings',
         'quiz_fixed_penalty',
@@ -355,22 +345,32 @@ class Quiz(Page):
 
     @staticmethod
     def error_message(player: Player, values):
-        correct = dict(
-            quiz_match_median='no_penalty',
-            quiz_equal_earnings='no_penalty_formula',
-            quiz_below_earnings='penalty_formula',
-            quiz_fixed_penalty='fixed',
-        )
-        wrong = [k for k, v in correct.items() if values.get(k) != v]
+        # (字段, 正确答案, 页面题号)
+        correct = [
+            ('quiz_match_median', 'no_penalty', 1),
+            ('quiz_cost', 'higher', 2),
+            ('quiz_equal_earnings', 'no_penalty_formula', 3),
+            ('quiz_below_earnings', 'penalty_formula', 4),
+            ('quiz_fixed_penalty', 'fixed', 5),
+        ]
+        wrong = sorted({num for k, v, num in correct if values.get(k) != v})
         if wrong:
-            return f"You got {len(wrong)} answer(s) wrong. Please re-read the rules and try again."
+            nums = ", ".join(str(n) for n in wrong)
+            plural = "s" if len(wrong) > 1 else ""
+            return f"Question{plural} {nums}: incorrect. Please re-read the rules and try again."
 
     @staticmethod
     def vars_for_template(player: Player):
+        # 含 instructions_content.html（页内"查看规则"折叠块）需要的全部变量
+        group_size = player_group_size(player)
         return dict(
             L=player.session.config.get('penalty', PENALTY_LOW),
             E=C.ENDOWMENT,
             K=C.K,
+            n=group_size,
+            other_players=group_size - 1,
+            num_rounds=session_num_rounds(player),
+            point_value=player.session.config.get('real_world_currency_per_point', 1),
         )
 
 
@@ -456,11 +456,11 @@ class Survey(Page):
     form_model = 'player'
     form_fields = [
         'survey_risk',
-        'survey_strategy',
         'survey_use_median',
         'survey_median_importance',
         'survey_use_prior_medians',
         'survey_prior_medians_importance',
+        'survey_strategy',
         'survey_best',
         'survey_best_other',
         'survey_prior_bc',
@@ -472,6 +472,12 @@ class Survey(Page):
     @staticmethod
     def is_displayed(player: Player):
         return player.round_number == session_num_rounds(player)
+
+    @staticmethod
+    def error_message(player: Player, values):
+        # 其余题目通过必填校验；"其他请说明"仅在 Q7 选 other 时必填
+        if values.get('survey_best') == 'other' and not (values.get('survey_best_other') or '').strip():
+            return "You selected \"Others\" in Q7 — please specify in the text box."
 
 
 class Payment(Page):
