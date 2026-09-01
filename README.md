@@ -1,15 +1,18 @@
-# Reversed Beauty Contest — two-site oTree repository
+# Reversed Beauty Contest — oTree repository (US site)
 
-This repository contains two independent oTree projects for the same Reversed Beauty Contest experiment. Participant-facing pages, experimental rules, payoff calculations, survey questions, payment parameters, and the 20-round structure are identical across sites. Only the official-session recruitment and group-assignment plan differs.
+This repository contains the US-site oTree project for the Reversed Beauty Contest experiment.
 
-| Project | Venue | Official session plan | Participants covering all six arms |
-|---|---|---|---:|
-| [`site1_US/`](site1_US/) | Site 1 — US | Six arm-specific configs; target 15 per session, with small groups formed flexibly in blocks of 5 | 90 planned |
-| [`site2_Singapore/`](site2_Singapore/) | Site 2 — Singapore | Six arm-specific configs; 10 planned 15-person sessions, with three groups in each main no-belief block | 150 planned |
+| Project | Venue | Official session plan |
+|---|---|---|
+| [`site1_US/`](site1_US/) | Site 1 — US | Six arm-specific configs; target 15 per session |
+
+The China deployment lives in its own repository:
+[**Rat-Race_Site1_China**](https://github.com/Annawolf0128/Rat-Race_Site1_China)
+(Chinese interface, RMB payment, deployment manual in Chinese).
 
 ## Treatment coverage
 
-Both projects implement the same six arms:
+The project implements six arms:
 
 1. Small–Low: group size 5, penalty 20, no belief elicitation
 2. Small–High: group size 5, penalty 40, no belief elicitation
